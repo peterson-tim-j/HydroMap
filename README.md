@@ -7,7 +7,7 @@ _HydroMap_ is a powerful R package for kriging interpolation of sparse groundwat
  * all mapping parameters can be calibrated using split-sample maximum likelihood estimation.
  * kriging variogram parameters can be calibrated - which trials have shown to significantly reduced the prediction error.
 
-Importantly, this is a *beta* release. There is basic documentation (see pdf) and the code has been tested. In the future, additional functions will be made accessible to the user and documented.
+Importantly, this is a **beta** release. There is basic documentation (see [PDF MANUAL](https://github.com/peterson-tim-j/HydroMap/blob/master/hydroMap.pdf)) and the code has been tested. In the future, additional functions will be made accessible to the user and documented.
 
 To illustrate the performance of _HydroMap_, Fig. 1 shows the interpolated watertable depth for Victoria, Australia, at April 2000. It was derived using the conventional kriging approach of the DEM elevation being the only predictor of the head. It shows the water table to be very smooth - which somewhat counter intuitively arises because the interpolated water level elevation is very noisy. That is, whenever the DEM elevation rises so does the heads. Fig. 2 shows that when the above _HydroMap_ features are included in the mapping then the heads become smooth and, consequently, the depth to the water table becomes "noisy" with significantly greater variability shown in the mountainous regions of the east.
 
