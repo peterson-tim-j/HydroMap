@@ -44,14 +44,14 @@
 #' be of a sufficiently small number of categories that multiple data points exists within each land category. If \code{NULL}, then land categories are not accounted for in the mapping. The default is \code{NULL}.
 #'
 #' @param \code{data} is either a character string to a .csv file of point data or a \code{SpatialPointsDataFrame} containing the columns \code{Easting}, \code{Northing} and \code{head} or \code{depth}.
-#' If the formula includes the term \code{elev}, then the bore elevation should included in \code{data} so as to account for difference between the bore and DEM elevation.
-#' Each formula right hand side variable other than \code{MrVBF}, \code{MrRTF} and \code{smoothing} should also provided within \code{data}.
+#' If the formula includes the term \code{elev}, then the bore elevation should be included in \code{data} so as to account for difference between the bore and DEM elevation.
+#' Each formula right hand side variable other than \code{MrVBF}, \code{MrRTF} and \code{smoothing} should also be provided within \code{data}.
 #'
-#' @param \code{data.fixedHead} is as for \code{data} but the points are treated as fixed head points within by a cokriging approach. It can be used to guide the head estimates
+#' @param \code{data.fixedHead} is as for \code{data} but the points are treated as fixed head points within a cokriging approach. It can be used to guide the head estimates
 #' toward zero along, say, the coastline. The fixed points will have a greater influence when no observation data is nearby. If \code{NULL}, then no fixed head points are used.
 #' The default is \code{NULL}.
 #'
-#' @param \code{newdata} is as for \code{data} but the points in a split-sample cross-validation scheme to estimate the interpolation error. Points listed within \code{newdata} should not be
+#' @param \code{newdata} is as for \code{data} but the points are used in a split-sample cross-validation scheme to estimate the interpolation error. Points listed within \code{newdata} should not be
 #' listed within \code{data}. If \code{is.null(newdata)==TRUE}, then \code{grid} should be \code{NULL}.
 #'
 #' @param \code{data.errvar.colname} is a character of the column name within \code{data} that define measurement error, as a variance. If \code{NULL}, then measurement error is not accounted for.
@@ -60,8 +60,8 @@
 #' @param \code{model} is either a character for the name of the variogram model type or a \code{gstat} variogram model object of type \code{variogramModel}. The available options are as per \code{gstat}, but
 #' it is suggested to be \code{Mat}.
 #'
-#' @param  \code{mrvbf.pslope} defines the MrVFB shape parameter for the slope (see Gallant et al. 2003), a vector of two values defining the optimisation range when the parameter is
-#' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
+#' @param  \code{mrvbf.pslope} defines the MrVFB shape parameter for the slope (see Gallant et al. 2003), a vector of two values defines the optimisation range when the parameter is
+#' treated as a real number. A vector of length >2 values defines the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 #' not be optimised. If the \code{formula} includes either of the terms \code{MrVBF} or \code{MrRTF}, then the default is \code{seq(0.5, 1.5, length.out = 11)}. Else, the default is \code{NULL}.
 #'
 #' @param  \code{mrvbf.ppctl} defines the MrVFB shape parameter for elevation percentile (see Gallant et al. 2003). It can be a scalar number, a vector of two values defining the optimisation range when the parameter is

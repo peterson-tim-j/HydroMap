@@ -3,7 +3,7 @@
 #' \code{krige.head.calib} calibrates parameters to minimise the interpolation error.
 #'
 #' @details This function optimises the parameters for the spatial interpolation so as to minimise the
-#' interpolation error - which is defined using a formal likelihood function. Once this function has return
+#' interpolation error - which by default is defined using a formal likelihood function. Once this function has return
 #' the optimal parameter set, then the mapping can be undertaken using \code{\link{krige.head}}.
 #' Importantly, the mapping approach used for the calibration (e.g. the formula etc) must be identical to that
 #' input to \code{\link{krige.head}}.
@@ -12,7 +12,7 @@
 #' includes the variogram parameters (e.g. range, sill and nuggest) and the search parameters for local kriging (e.g. radius, minimum and
 #' maximum number of observations to use). Optimising these parameters is not common in kriging. It is done herein because trials for Victoria,
 #' Australia, showed that calibrating these parameters produced significantly lower cross-validation errors (i.e. the error in predicting the observations
-#' removed from the optimisation) compared to the standard approach of graphical estimation from an experimental variogram. The optimisation is
+#' removed from the optimisation) compared to the standard approach using fitting to an experimental variogram. The optimisation is
 #' numerically challenging and the following factors should be considered before use:
 #'
 #' \itemize{
@@ -20,7 +20,7 @@
 #'  \item{The optimisation package \code{rgeoud} is used herein. See the \code{rgeoud} documentation for details of the optimisation scheme.}
 #'  \item{Trials have established default calibration parameters and settings that were effective for Victoria, Australia. There is no guarantee they will be effective for other regions.}
 #'  \item{The available input point data must be split up into \code{data} and \code{newdata}. The point observations within \code{data} are used to estimate the water level at the locations defined
-#'  within \code{newdata}. The difference between the observed and estimated values defines the interpolation prediction error. This process also gives the kriging variance at the process
+#'  within \code{newdata}. The difference between the observed and estimated values defines the interpolation prediction error. This process also gives the kriging variance at
 #'  each \code{newdata} location. The points used for \code{data} and \code{newdata} should both cover all types of terrain, geology, landuse and the full mapping extend so as to avoid bias. Also, changing either may
 #'  change the calibration solution. }
 #'  \item{The \code{objFunc.type} allows for maximum likelihood estimation - that is optimisation that accounts for the expected kriging error. See \code{objFunc.type} below for details.
