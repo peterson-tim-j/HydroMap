@@ -3,11 +3,11 @@
 _HydroMap_ is a powerful R package for kriging interpolation of sparse groundwater level observatons - that is, groundwater potentiometry. Key features include:
  * land surface elevation, topographic form (e.g. valleys and ridges) and the smoothness of the groundwater head (relative to the terrain) is account for in the mapping.
  * catagorical land types such as geology can be included in the mapping.
- * fixed head boundary conditions, such as the ocean, can be included and importantly they only have an influence if there is no nearby observation points.
- * all mapping parameters can be calibrated use split-sample maximum likelihood estimation.
- * kriging variogram parameters can be calibrated - which trials have shown significantly reduced the prediction error.
+ * fixed head boundary conditions, such as the ocean, can be included and importantly they only have an influence if there are no nearby observation points.
+ * all mapping parameters can be calibrated using split-sample maximum likelihood estimation.
+ * kriging variogram parameters can be calibrated - which trials have shown to significantly reduced the prediction error.
 
-To illustrate the perforamnce of _HydroMap_, below is a interpolated watertable for Victoria, Australia, at April 2000. It was derived using the conventional approach of the DEM elevation being the only predictor of the head. It shows the water table to be very soooth - which somewhat counter intuitively arises because the interpolated water level elevation is very noisy. That is, whenever the DEM elevation rises so does the heads. However, when the above features are included, then the heads become smooth and, consequently, the depth to the water table becomes "noisy" with significantly greater variability shown in the mountainous regions of the east.
+To illustrate the perforamnce of _HydroMap_, below is the interpolated watertable depth for Victoria, Australia, at April 2000. It was derived using the conventional kriging approach of the DEM elevation being the only predictor of the head. It shows the water table to be very soooth - which somewhat counter intuitively arises because the interpolated water level elevation is very noisy. That is, whenever the DEM elevation rises so does the heads. However, when the above features are included, then the heads become smooth and, consequently, the depth to the water table becomes "noisy" with significantly greater variability shown in the mountainous regions of the east.
 
 # Getting Started
 
