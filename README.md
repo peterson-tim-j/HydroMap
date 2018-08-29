@@ -7,9 +7,13 @@ _HydroMap_ is a powerful R package for kriging interpolation of sparse groundwat
  * all mapping parameters can be calibrated using split-sample maximum likelihood estimation.
  * kriging variogram parameters can be calibrated - which trials have shown to significantly reduced the prediction error.
 
-To illustrate the perforamnce of _HydroMap_, below is the interpolated watertable depth for Victoria, Australia, at April 2000. It was derived using the conventional kriging approach of the DEM elevation being the only predictor of the head. It shows the water table to be very soooth - which somewhat counter intuitively arises because the interpolated water level elevation is very noisy. That is, whenever the DEM elevation rises so does the heads. However, when the above features are included, then the heads become smooth and, consequently, the depth to the water table becomes "noisy" with significantly greater variability shown in the mountainous regions of the east.
+To illustrate the perforamnce of _HydroMap_, Fig. 1 shows the interpolated watertable depth for Victoria, Australia, at April 2000. It was derived using the conventional kriging approach of the DEM elevation being the only predictor of the head. It shows the water table to be very soooth - which somewhat counter intuitively arises because the interpolated water level elevation is very noisy. That is, whenever the DEM elevation rises so does the heads. Fig. 2 shows that when the above _HydroMap_ features are included in the mapping then the heads become smooth and, consequently, the depth to the water table becomes "noisy" with significantly greater variability shown in the mountainous regions of the east.
 
 ![Convetional kriging approach](https://user-images.githubusercontent.com/8623994/44770420-57776580-abab-11e8-9b95-ff54604ba6e3.png)
+Figure 1. Depth to water table for Victoria, Australia, derived only the DEM elevation as a predictor of groundwater head.
+
+![HydroMap approach](https://user-images.githubusercontent.com/8623994/44770783-79bdb300-abac-11e8-9404-d0d7a4b4e9f4.png)
+Figure 2. Depth to water table for Victoria, Australia, derived the key featues of _HydroMap_.
 
 # Getting Started
 
