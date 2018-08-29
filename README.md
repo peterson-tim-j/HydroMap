@@ -9,6 +9,8 @@ _HydroMap_ is a powerful R package for kriging interpolation of sparse groundwat
 
 To illustrate the perforamnce of _HydroMap_, below is the interpolated watertable depth for Victoria, Australia, at April 2000. It was derived using the conventional kriging approach of the DEM elevation being the only predictor of the head. It shows the water table to be very soooth - which somewhat counter intuitively arises because the interpolated water level elevation is very noisy. That is, whenever the DEM elevation rises so does the heads. However, when the above features are included, then the heads become smooth and, consequently, the depth to the water table becomes "noisy" with significantly greater variability shown in the mountainous regions of the east.
 
+[https://user-images.githubusercontent.com/8623994/44770420-57776580-abab-11e8-9b95-ff54604ba6e3.png](Conventional approach)
+
 # Getting Started
 
 To get started using the package, following these steps:
