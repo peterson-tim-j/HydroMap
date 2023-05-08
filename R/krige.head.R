@@ -144,6 +144,19 @@
 #' heads <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
 #' model=model, smooth.std=smooth.std, maxdist=maxdist, nmax=nmax, fit.variogram.type=3, debug.level=1)
 #'
+#' # Calculate the depth to water table.
+#' # NOTE, this required getting the DEM elevation into the head grids - event if there are different number of finite values.
+#' gridded(heads)=F 
+#' gridded(DEM)=F
+#' heads$DBNS = DEM$DEM - heads$head
+#' gridded(heads)=T
+#' 
+#' # Map depth to water table.
+#' spplot(heads,3)
+#' 
+#' # Export grids to an ARCMAP *.asc file
+#' write.asciigrid(heads,'DBNS.asc',3,na.value = -999)
+#' 
 #' # Recalibrate the parameters and map using the default settings.
 #' heads <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
 #' model = 'Mat',  fit.variogram.type=1, debug.level=1)
