@@ -1,5 +1,5 @@
-Package: hydroMap
-Title: hydroMap
+Package: HydroMap
+Title: HydroMap
 Version: 0.1
 Authors@R: person("Tim", "Peterson", email = "timjp@unimelb.edu.au", role = c("aut", "cre"))
 Description: Interpolates groundwater level observations giving realistic flow lines.
@@ -7,5 +7,5 @@ Depends: R (>= 3.2.2)
 License: GPL3 or later.
 Encoding: UTF-8
 LazyData: true
-Imports: sp, gstat, raster, parallel, rgenoud, RSAGA
+Imports: sp, gstat, raster, snow, parallel, rgenoud, RSAGA
 RoxygenNote: 6.0.1.9000
