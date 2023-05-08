@@ -84,12 +84,6 @@
 #' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 #' not be optimised.  The default is from 10\% to 100\% of \code{grid} extend at increments of 10\%. If \code{grid} is \code{NULL}, then the user must input the search radius in one of the three accepted forms.
 #'
-#' @param \code{trendMaxDistFrac} defines a threshold distance between an observation and estimation point (as a fraction of \code{maxdist}) at which minimal weight should be placed on the observation (see Rivoirard et al. 2011).
-#' This can be used to reduce the numerical artefacts in the mapped head, which can appear as a linear sharp change in the head.
-#' It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
-#' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
-#' not be optimised.  The default is \code{seq(0.1,1,0.1)}.
-#'
 #' @param \code{nmin} defines the minimum number of \code{data} observations to use when estimating each point using local kriging. If the \code{nmin} observations cannot be located within the search radius \code{nmax}, then the search
 #' radius is increased until \code{nmin} points are obtained. If \code{nmin} is between zero and one and \code{omax} is between zero and one, then \code{nmin} is treated as a fraction of \code{nmax}. Else, \code{nmax} is treated as an
 #' integer number of data points and hence must be >0. This input cannot be optimised. The default value is 0.2.
@@ -170,7 +164,6 @@ krige.head <- function(
   nmax = if(is.character(data)){-999}else{ceiling(seq(0.1,0.20,0.01)*length(data))},
   nmax.fixedHead = if(!is.null(data.fixedHead)) {seq(10,110,length=11)}else{NULL},
   maxdist = if(class(grid)=='SpatialPixelsDataFrame' || class(grid)=='SpatialGridDataFrame'){ceiling(0.5*sqrt((extent(grid)[2]-extent(grid)[1])^2 + (extent(grid)[4]-extent(grid)[3])^2)*seq(0.1,1,0.1))}else{-999},
-  trendMaxDistFrac = seq(0.1,1,0.1),
   nmin = 0.2,
   omax = NULL,
   nsim = 0,
@@ -275,10 +268,6 @@ krige.head <- function(
   # Check the inputs 'newdata' contains columns called 'head'.
   if (!is.null(newdata) && !any(match(names(data),'head')))
     stop('Input "newdata" must contain a variable called "head". If you do not require the residuals, it can be input as any value.')
-
-  # Check the trend smoothing
-  if (!is.null(trendMaxDistFrac) && (trendMaxDistFrac<0 || trendMaxDistFrac>1))
-    stop('The trend smoothing input trendMaxDistFrac must be >0 and <= 1. To turn the feature off, input NULL.')
 
   # Check variogram inputs.
   if (fit.variogram.type==1) {
@@ -549,7 +538,7 @@ krige.head <- function(
   # If the parameters are vectors of two elemants, then continuous value
   # calibration is undertaken. If the parameters are discrete, the faster
   # discrete value calibration is undertaken at the provided parameter increments.
-  if (!do.grid.est && (length(mrvbf.pslope)>1 || length(mrvbf.ppctl)>1 || length(smooth.std)>1 || length(nmax)>1 || length(maxdist)>1 || length(trendMaxDistFrac)>1)) {
+  if (!do.grid.est && (length(mrvbf.pslope)>1 || length(mrvbf.ppctl)>1 || length(smooth.std)>1 || length(nmax)>1 || length(maxdist)>1)) {
     do.calibration <- TRUE;
   } else {
     do.calibration <- FALSE;
@@ -571,7 +560,6 @@ krige.head <- function(
                                        smooth.std = smooth.std,
                                        nmax = nmax,
                                        maxdist = maxdist ,
-                                       trendMaxDistFrac = trendMaxDistFrac,
                                        nmin = nmin,
                                        omax = omax ,
                                        nsim = nsim, fit.variogram.type=fit.variogram.type, objFunc.type=objFunc.type, use.cluster=use.cluster, debug.level=debug.level, ...)
@@ -617,8 +605,6 @@ krige.head <- function(
         nmax = calib.solution$par[i];
       } else if (param.Names[i] == 'maxdist') {
         maxdist = calib.solution$par[i];
-      } else if (param.Names[i] == 'trendMaxDistFrac') {
-        trendMaxDistFrac = calib.solution$par[i];
       } else if (param.Names[i] == 'nug') {
         nug = calib.solution$par[i];
       } else if (param.Names[i] == 'psill_model_1') {
@@ -709,7 +695,8 @@ krige.head <- function(
 
   # Build gstat model if using land type of fixed head data
   if (!is.null(grid.landtype.colname) || !is.null(data.fixedHead)) {
-    g = gstat(NULL, 'trend', formula=formula, data=data, model=model, nmin=nmin, nmax=nmax, maxdist = maxdist, omax=omax, force=TRUE, weights=data.weights, set=list(trnd_threshdist=maxdist*trendMaxDistFrac))
+    #g = gstat(NULL, 'trend', formula=formula, data=data, model=model, nmin=nmin, nmax=nmax, maxdist = maxdist, omax=omax, force=TRUE, weights=data.weights, set=list(trnd_threshdist=maxdist*trendMaxDistFrac))
+    g = gstat(NULL, 'trend', formula=formula, data=data, model=model, nmin=nmin, nmax=nmax, maxdist = maxdist, omax=omax, force=TRUE, weights=data.weights)
   }
 
   # If land catagories, then extend the kriging to collocated univeral cokriging.
@@ -1068,7 +1055,8 @@ krige.head <- function(
     }
 
     # Creat gstat object.
-    gs = gstat(NULL, 'heads', formula=formula, data=data, model=model, nmin=nmin, nmax=nmax, maxdist = maxdist, omax=omax, force=TRUE, weights=data.weights, set=list(trnd_threshdist=maxdist*trendMaxDistFrac))
+    #gs = gstat(NULL, 'heads', formula=formula, data=data, model=model, nmin=nmin, nmax=nmax, maxdist = maxdist, omax=omax, force=TRUE, weights=data.weights, set=list(trnd_threshdist=maxdist*trendMaxDistFrac))
+    gs = gstat(NULL, 'heads', formula=formula, data=data, model=model, nmin=nmin, nmax=nmax, maxdist = maxdist, omax=omax, force=TRUE, weights=data.weights)
     if (use.LandCatagory) {
       gs = gstat(gs,"land.type", formula = as.formula(paste(grid.landtype.colname,' ~ 1')), grid, nmax=1, nmin=1, model = model.landtype,merge=c("heads","land.type"))
       gs = gstat(gs, c("heads","land.type"), model = model.landtype.head)
@@ -1275,7 +1263,6 @@ krige.head <- function(
                                         data.fixedHead=data.fixedHead,
                                         data.weights=data.weights,
                                         smooth.std=smooth.std,
-                                        trendMaxDistFrac=trendMaxDistFrac,
                                         grid.elev=grid.elev,
                                         grid.MrVBF=grid.MrVBF,
                                         grid.MrRTF=grid.MrRTF,
@@ -1314,7 +1301,6 @@ krige.head <- function(
                                data.fixedHead=data.fixedHead,
                                data.weights=data.weights,
                                smooth.std=smooth.std,
-                               trendMaxDistFrac=trendMaxDistFrac,
                                grid.elev=grid.elev,
                                grid.MrVBF=grid.MrVBF,
                                grid.MrRTF=grid.MrRTF,
