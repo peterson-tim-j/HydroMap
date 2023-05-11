@@ -21,11 +21,8 @@ Figure 2. Depth to water table for Victoria, Australia, derived the key features
 
 To get started using the package, following these steps:
 
-1. Download the zipped package.
-1. Unzip the package on your local machine.
-1. Open R
-1. Install the required packages using the following R command: install(c("sp", "grid", "gstat","raster", "parallel", "rgenoud", "devtools","RSAGA"))
-1. Load the required R packages using the following R commands: library(sp); library(grid); library(gstat); library(raster); library(parallel); library(rgenoud); library(RSAGA);library(devtools)
-1. Within R, navigate to where you unzipped the HydroMap package.
-1. Install the HydroMap package using the following command: install("HydroMap")
-1. Open the help documentation for the main function: ?krige.head
+1. Open R and Install the required packages using the following R command: `install.packages(c("sp", "grid", "gstat","raster", "parallel", "rgenoud", "snow","RSAGA"))`
+1. Download the ![latest release](https://github.com/peterson-tim-j/HydroMap/releases).
+1. Install _HydroMap_ using the R command: `install.packages('HydroMap.tar.gz',repos = NULL)`
+1. Load _HydroMap_ using the R commands: `library("HydroMap")`
+1. Open the help documentation using `?krige.head` and follow the example.  

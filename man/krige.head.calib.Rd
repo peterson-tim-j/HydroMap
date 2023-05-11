@@ -54,7 +54,7 @@ krige.head.calib(
   objFunc.type = 1,
   use.cluster = TRUE,
   pop.size.multiplier = 3,
-  max.generations = 100,
+  max.generations = 200,
   hard.generation.limit = FALSE,
   solution.tolerance = 1e-04,
   debug.level = 0
@@ -80,7 +80,7 @@ krige.head.calib(
 \item{\code{newdata}}{is as for \code{data} but the points in a split-sample cross-validation scheme to estimate the interpolation error. Points listed within \code{newdata} should not be
 listed within \code{data}. \code{newdata} can be (i) a real scalar >0 and <1  defining the fraction of data points within \code{data} to randomly remove and from \code{data} and use for cross-validation,
 (i) an integer scalar >1 and <\code{length(data)} defining the number of data points within \code{data} to randomly remove and from \code{data} and use for cross-validation  (iii) a vector of indexes defining rows numbers within \code{data} to be extract and uses for the cross-validation; (iv) a vector of logicals
-with \ciode{TRUE} defining rows numbers within \code{data} to be extract and used for the cross-validation, (v) a \code{SpatialPointsDataFrame} variable defining the complete data for cross validation - which must have identical columns to \code{data}.
+with \code{TRUE} defining rows numbers within \code{data} to be extract and used for the cross-validation, (v) a \code{SpatialPointsDataFrame} variable defining the complete data for cross validation - which must have identical columns to \code{data}.
 The default is \code{newdata=0.5},}
 
 \item{\code{data.errvar.colname}}{see \code{\link{krige.head}}.}
@@ -155,6 +155,7 @@ library(grid)
 library(gstat)
 library(raster)
 library(RSAGA)
+library(snow)
 library(parallel)
 library(rgenoud)
 
@@ -172,10 +173,10 @@ f <- as.formula('head ~ elev + smoothing')
 # Define an initial isotropic variogram model. All of the parameters will be calibrated.
 varigram.model <- vgm(psill=25, model="Mat", range=5000, nugget=5, kappa = 0.5)
 
-# Calibrate the mapping parameters with 25\% of the data randomly selected.
-calib.results <- krige.head.calib(formula=f, grid=DEM, data=obs.data, newdata=0.25,
-data.errvar.colname='total_err_var', model = varigram.model,  fit.variogram.type=1,
-debug.level=1)
+# Calibrate the mapping parameters with 25\% of the data randomly selected at 2 cores.
+calib.results <- krige.head.calib(formula=f, grid=DEM, data=obs.data, newdata=0.25, nmin=0, nmax=Inf, maxdist=Inf, omax=0,
+   data.errvar.colname='total_err_var', model = variogram.model,  fit.variogram.type=1,
+   debug.level=0, use.cluster = 2)
 
 # Reformat the parameter to a named list. This is just for ease of use and the need for
 this may be removed in future versions.
@@ -194,7 +195,7 @@ varigram.model = vgm(psill=params.all[['psill_model_1']], model='Mat',
 
 # Grid the observed head data.
 head.map <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
-model=varigram.model, smooth.std=params.all[['smooth.std']], maxdist=params.all[['maxdist']],
+model=variogram.model, smooth.std=params.all[['smooth.std']], maxdist=params.all[['maxdist']],
 nmax=params.all[['nmax']], fit.variogram.type=3, debug.level=1)
 
 # Write the grids to ARCMAP ASCII grids
