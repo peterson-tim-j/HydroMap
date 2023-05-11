@@ -4,8 +4,7 @@
 \alias{import.pointData}
 \title{Reads in the point groundwater level observations file.}
 \usage{
-import.pointData(data, min.sepDist = 5, orderby.head = TRUE,
-  debug.level = 0)
+import.pointData(data, min.sepDist = 5, orderby.head = TRUE, debug.level = 0)
 }
 \arguments{
 \item{\code{data}}{character string for the point data .csv filename. The file must contain columns with the following names "easting", "northing" and "head".}

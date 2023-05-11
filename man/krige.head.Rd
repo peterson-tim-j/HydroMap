@@ -4,24 +4,59 @@
 \alias{krige.head}
 \title{Spatially interpolates sparse groundwater level observations, and if required, estimate mapping parameters.}
 \usage{
-krige.head(formula = as.formula("head ~ elev + MrVBF + MrRTF + smoothing"),
-  grid = NULL, grid.landtype.colname = NULL, data = NULL,
-  data.fixedHead = NULL, newdata = NULL, data.errvar.colname = NULL,
-  model = NULL, mrvbf.pslope = if (any(match(all.vars(as.formula(formula)),
-  "MrVBF", nomatch = F) | match(all.vars(as.formula(formula)), "MrRTF", nomatch
-  = F))) {     seq(0.5, 1.5, length.out = 11) } else {     NULL },
-  mrvbf.ppctl = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch
-  = F) | match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {    
-  seq(0.5, 1.5, length.out = 11) } else {     NULL }, smooth.std = seq(0.5,
-  1.5, length.out = 11), nmax = if (is.character(data)) {     -999 } else {   
-   ceiling(seq(0.1, 0.2, 0.01) * length(data)) }, nmax.fixedHead = if
-  (!is.null(data.fixedHead)) {     seq(10, 110, length = 11) } else {     NULL
-  }, maxdist = if (class(grid) == "SpatialPixelsDataFrame" || class(grid) ==
-  "SpatialGridDataFrame") {     ceiling(0.5 * sqrt((extent(grid)[2] -
-  extent(grid)[1])^2 + (extent(grid)[4] - extent(grid)[3])^2) * seq(0.1, 1,
-  0.1)) } else {     -999 }, trendMaxDistFrac = seq(0.1, 1, 0.1),
-  nmin = 0.2, omax = NULL, nsim = 0, fit.variogram.type = 1,
-  objFunc.type = 1, use.cluster = TRUE, debug.level = 0, ...)
+krige.head(
+  formula = as.formula("head ~ elev + MrVBF + MrRTF + smoothing"),
+  grid = NULL,
+  grid.landtype.colname = NULL,
+  data = NULL,
+  data.fixedHead = NULL,
+  newdata = NULL,
+  data.errvar.colname = NULL,
+  model = NULL,
+  mrvbf.pslope = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
+    match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
+     seq(0.5, 1.5,
+    length.out = 11)
+ } else {
+     NULL
+ },
+  mrvbf.ppctl = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
+    match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
+     seq(0.5, 1.5,
+    length.out = 11)
+ } else {
+     NULL
+ },
+  smooth.std = seq(0.5, 1.5, length.out = 11),
+  nmax = if (is.character(data)) {
+     -999
+ } else {
+     ceiling(seq(0.1, 0.2, 0.01) *
+    length(data))
+ },
+  nmax.fixedHead = if (!is.null(data.fixedHead)) {
+     seq(10, 110, length = 11)
+ } else
+    {
+     NULL
+ },
+  maxdist = if (class(grid) == "SpatialPixelsDataFrame" || class(grid) ==
+    "SpatialGridDataFrame") {
+     ceiling(0.5 * sqrt((extent(grid)[2] -
+    extent(grid)[1])^2 + (extent(grid)[4] - extent(grid)[3])^2) * seq(0.1, 1, 0.1))
+ }
+    else {
+     -999
+ },
+  nmin = 0.2,
+  omax = NULL,
+  nsim = 0,
+  fit.variogram.type = 1,
+  objFunc.type = 1,
+  use.cluster = TRUE,
+  debug.level = 0,
+  ...
+)
 }
 \arguments{
 \item{\code{formula}}{defines the R formula (as a character or formula data type) to be used to interpolate the heads. The left hand side of the formula must be \code{head}.
@@ -77,12 +112,6 @@ not be optimised.  The default is \code{seq(10,110,length=11)}.}
 \item{\code{maxdist}}{defines the maximum search radius to use when estimate each point using local kriging. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 not be optimised.  The default is from 10\% to 100\% of \code{grid} extend at increments of 10\%. If \code{grid} is \code{NULL}, then the user must input the search radius in one of the three accepted forms.}
-
-\item{\code{trendMaxDistFrac}}{defines a threshold distance between an observation and estimation point (as a fraction of \code{maxdist}) at which minimal weight should be placed on the observation (see Rivoirard et al. 2011).
-This can be used to reduce the numerical artefacts in the mapped head, which can appear as a linear sharp change in the head.
-It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
-treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
-not be optimised.  The default is \code{seq(0.1,1,0.1)}.}
 
 \item{\code{nmin}}{defines the minimum number of \code{data} observations to use when estimating each point using local kriging. If the \code{nmin} observations cannot be located within the search radius \code{nmax}, then the search
 radius is increased until \code{nmin} points are obtained. If \code{nmin} is between zero and one and \code{omax} is between zero and one, then \code{nmin} is treated as a fraction of \code{nmax}. Else, \code{nmax} is treated as an
@@ -146,10 +175,12 @@ In using this function, the primary user decisions are:
 \examples{
 # Load packages in case they have not loaded.
 library(sp)
+library(raster)
 library(grid)
 library(gstat)
 library(raster)
 library(RSAGA)
+library(snow)
 library(parallel)
 library(rgenoud)
 
@@ -164,12 +195,36 @@ data('mapping.parameters')
 # Define a simple kriging formula without MrVBF terms that does not require the package RSAGA.
 f <- as.formula('head ~ elev + smoothing')
 
-# Interpolate the head data.
-heads <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
-model=model, smooth.std=smooth.std, maxdist=maxdist, nmax=nmax, fit.variogram.type=3, debug.level=1)
+# Crop this Statewide DEM abd obs pointvs to a small in the centre. 
+# Note, this is done to reduce the runtime. Comment out these two lines to map the whole state.
+DEM <- raster::crop(raster::raster(DEM), raster::extent(2400000, 2500000, 2550000, 2650000))
+DEM = as(DEM,'SpatialGridDataFrame')
+obs.data <- raster::crop(obs.data, DEM, inverse = F) 
 
-# Recalibrate the parameters and map using the default settings.
+# Interpolate the head data.
+# NOTE, here a global search radius is used (maxdist and nmax are replaced with inf) to reduce the run time. 
 heads <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
+model=model, smooth.std=smooth.std, nmax=Inf, maxdist=Inf, omax=0, fit.variogram.type=3, debug.level=1)
+
+# Calculate the depth to water table.
+# NOTE, this required getting the DEM elevation into the head grids - event if there are different number of finite values.
+gridded(heads)=F 
+gridded(DEM)=F
+heads$DBNS = DEM$DEM - heads$head
+gridded(heads)=T
+
+# Map depth to water table.
+spplot(heads,3, scales = list(draw = TRUE))
+
+# Export grids to an ARCMAP *.asc file
+write.asciigrid(heads,'DBNS.asc',3,na.value = -999)
+
+# Re-calibrate the parameters and map using the default settings.
+# Note, here only those parameters that are a vector are calibrated. This is in addition
+# to the variogram parameters. 
+varigram.model = vgm(psill=10, model='Mat', range= 10000 , nugget=1, kappa=0.1);
+heads <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
+nmax=Inf, maxdist=Inf, smooth.std = seq(0.5,1.5,length.out=11), 
 model = 'Mat',  fit.variogram.type=1, debug.level=1)
 
 }

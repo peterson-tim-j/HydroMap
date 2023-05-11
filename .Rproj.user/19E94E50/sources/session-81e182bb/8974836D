@@ -1,26 +1,26 @@
 {
-    "id": "4C0D952C",
-    "path": "C:/Users/tpet0008/Documents/HydroMap/R/krige.head.R",
-    "project_path": "R/krige.head.R",
+    "id": "8974836D",
+    "path": "C:/Users/tpet0008/Documents/HydroMap/R/set.env.R",
+    "project_path": "R/set.env.R",
     "type": "r_source",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1683426418056.0,
+    "created": 1683675524014.0,
     "source_on_save": false,
-    "relative_order": 2,
+    "relative_order": 9,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "1313,80",
-        "scrollLine": "1280"
+        "cursorPosition": "5,11",
+        "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1683775888,
+    "lastKnownWriteTime": 1683421624,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1683775888647,
+    "last_content_update": 1683421624,
     "read_only": false,
     "read_only_alternatives": []
 }

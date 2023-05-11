@@ -4,27 +4,61 @@
 \alias{krige.head.calib}
 \title{Calibration of spatial interpolation parameters for mapping groundwater level observations.}
 \usage{
-
-  krige.head.calib(formula = as.formula("head ~ elev + MrVBF + MrRTF + smoothing"),
-  grid, grid.landtype.colname = NULL, data, newdata = 0.5,
-  data.fixedHead = NULL, data.errvar.colname = NULL, model = c("Mat"),
-  mrvbf.pslope = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch
-  = F) | match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {    
-  seq(0.5, 1.5, length.out = 11) } else {     NULL }, mrvbf.ppctl = if
-  (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
-  match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {     seq(0.5,
-  1.5, length.out = 11) } else {     NULL }, smooth.std = seq(0.5, 1.5,
-  length.out = 11), nmax = if (is.character(data)) {     -999 } else {    
-  ceiling(seq(0.1, 0.2, 0.01) * length(data)) }, nmax.fixedHead = if
-  (!is.null(data.fixedHead)) {     seq(10, 110, length = 11) } else {     NULL
-  }, maxdist = if (class(grid) == "SpatialPixelsDataFrame" || class(grid) ==
-  "SpatialGridDataFrame") {     ceiling(0.5 * sqrt((extent(grid)[2] -
-  extent(grid)[1])^2 + (extent(grid)[4] - extent(grid)[3])^2) * seq(0.1, 1,
-  0.1)) } else {     -999 }, trendMaxDistFrac = seq(0.1, 1, 0.1),
-  nmin = 0.2, omax = NULL, fit.variogram.type = 1, objFunc.type = 1,
-  use.cluster = TRUE, pop.size.multiplier = 3, max.generations = 100,
-  hard.generation.limit = FALSE, solution.tolerance = 1e-04,
-  debug.level = 0)
+krige.head.calib(
+  formula = as.formula("head ~ elev + MrVBF + MrRTF + smoothing"),
+  grid,
+  grid.landtype.colname = NULL,
+  data,
+  newdata = 0.5,
+  data.fixedHead = NULL,
+  data.errvar.colname = NULL,
+  model = c("Mat"),
+  mrvbf.pslope = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
+    match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
+     seq(0.5, 1.5,
+    length.out = 11)
+ } else {
+     NULL
+ },
+  mrvbf.ppctl = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
+    match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
+     seq(0.5, 1.5,
+    length.out = 11)
+ } else {
+     NULL
+ },
+  smooth.std = seq(0.5, 1.5, length.out = 11),
+  nmax = if (is.character(data)) {
+     -999
+ } else {
+     ceiling(seq(0.1, 0.2, 0.01) *
+    length(data))
+ },
+  nmax.fixedHead = if (!is.null(data.fixedHead)) {
+     seq(10, 110, length = 11)
+ } else
+    {
+     NULL
+ },
+  maxdist = if (class(grid) == "SpatialPixelsDataFrame" || class(grid) ==
+    "SpatialGridDataFrame") {
+     ceiling(0.5 * sqrt((extent(grid)[2] -
+    extent(grid)[1])^2 + (extent(grid)[4] - extent(grid)[3])^2) * seq(0.1, 1, 0.1))
+ }
+    else {
+     -999
+ },
+  nmin = 0.2,
+  omax = NULL,
+  fit.variogram.type = 1,
+  objFunc.type = 1,
+  use.cluster = TRUE,
+  pop.size.multiplier = 3,
+  max.generations = 100,
+  hard.generation.limit = FALSE,
+  solution.tolerance = 1e-04,
+  debug.level = 0
+)
 }
 \arguments{
 \item{\code{formula}}{see \code{\link{krige.head}}.}
@@ -78,12 +112,6 @@ not be optimised.  The default is \code{seq(10,110,length=11)}.}
 treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 not be optimised.  The default is from 10\% to 100\% of \code{grid} extend at increments of 10\%. If \code{grid} is \code{NULL}, then the user must input the search radius in one of the three accepted forms.}
 
-\item{\code{trendMaxDistFrac}}{defines the calibration type and range for the threshold parameter for the distance between an observation and estimation point (as a fraction of \code{maxdist}) at which minimal weight should be placed on the observation (see Rivoirard et al. 2011).
-This can be used to reduce the numerical artefacts in the mapped head, which can appear as a linear sharp change in the head.
-It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
-treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
-not be optimised.  The default is \code{seq(0.1,1,0.1)}.}
-
 \item{\code{nmin}}{see \code{\link{krige.head}}.}
 
 \item{\code{omax}}{see \code{\link{krige.head}}.}
@@ -117,6 +145,9 @@ As per \code{genoud} plus the parameter values in the transformed calibration sp
 \description{
 \code{krige.head.calib} calibrates parameters to minimise the interpolation error.
 }
+\details{
+
+}
 \examples{
 # Load packages in case they have not loaded.
 library(sp)
@@ -149,7 +180,6 @@ debug.level=1)
 # Reformat the parameter to a named list. This is just for ease of use and the need for
 this may be removed in future versions.
 params.all = c(mrvbf.pslope=NA,mrvbf.ppctl=NA,smooth.std=NA,nmax=NA,maxdist=NA,
-               trendMaxDistFrac=NA,nug = NA, psill_model_1 = NA, range_model_1 = NA,
                kappa_model_1 = NA, ang1_model_1 = NA, anis1_model_1 = NA,
                nmax.fixedHead = NA);
 for (i in 1:length(head.calib$param.Names)) {

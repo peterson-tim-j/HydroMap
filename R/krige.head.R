@@ -121,10 +121,12 @@
 #' @examples
 #' # Load packages in case they have not loaded.
 #' library(sp)
+#' library(raster)
 #' library(grid)
 #' library(gstat)
 #' library(raster)
 #' library(RSAGA)
+#' library(snow)
 #' library(parallel)
 #' library(rgenoud)
 #'
@@ -140,9 +142,16 @@
 #' # Define a simple kriging formula without MrVBF terms that does not require the package RSAGA.
 #' f <- as.formula('head ~ elev + smoothing')
 #'
+#' # Crop this Statewide DEM abd obs pointvs to a small in the centre. 
+#' # Note, this is done to reduce the runtime. Comment out these two lines to map the whole state.
+#' DEM <- raster::crop(raster::raster(DEM), raster::extent(2400000, 2500000, 2550000, 2650000))
+#' DEM = as(DEM,'SpatialGridDataFrame')
+#' obs.data <- raster::crop(obs.data, DEM, inverse = F) 
+#' 
 #' # Interpolate the head data.
+#' # NOTE, here a global search radius is used (maxdist and nmax are replaced with inf) to reduce the run time. 
 #' heads <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
-#' model=model, smooth.std=smooth.std, maxdist=maxdist, nmax=nmax, fit.variogram.type=3, debug.level=1)
+#' model=model, smooth.std=smooth.std, nmax=Inf, maxdist=Inf, omax=0, fit.variogram.type=3, debug.level=1)
 #'
 #' # Calculate the depth to water table.
 #' # NOTE, this required getting the DEM elevation into the head grids - event if there are different number of finite values.
@@ -152,13 +161,17 @@
 #' gridded(heads)=T
 #' 
 #' # Map depth to water table.
-#' spplot(heads,3)
+#' spplot(heads,3, scales = list(draw = TRUE))
 #' 
 #' # Export grids to an ARCMAP *.asc file
 #' write.asciigrid(heads,'DBNS.asc',3,na.value = -999)
 #' 
-#' # Recalibrate the parameters and map using the default settings.
+#' # Re-calibrate the parameters and map using the default settings.
+#' # Note, here only those parameters that are a vector are calibrated. This is in addition
+#' # to the variogram parameters. 
+#' varigram.model = vgm(psill=10, model='Mat', range= 10000 , nugget=1, kappa=0.1);
 #' heads <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
+#' nmax=Inf, maxdist=Inf, smooth.std = seq(0.5,1.5,length.out=11), 
 #' model = 'Mat',  fit.variogram.type=1, debug.level=1)
 #'
 #' @export
@@ -186,8 +199,10 @@ krige.head <- function(
   debug.level=0,
   ...) {
 
-  # NOTE, to build pdf manual:
-  # path <- find.package("hydroMap")
+  # To Update HTML documentationm:
+  # devtools::document()
+  # NOTE, to build pdf manual. For Windows install: install.packages("tinytex"):
+  # path <- find.package("HydroMap")
   # system(paste(shQuote(file.path(R.home("bin"), "R")),"CMD", "Rd2pdf", shQuote(path)))
 
   # Remove function details from warnings
@@ -242,7 +257,7 @@ krige.head <- function(
 
   # Check variable names
   if (!use.elev && !use.MrVBF && !use.MrRTF && !use.DEMsmoothing && length(var.names)>1) {
-    warning('Formula does not contain any of the expected terms: "elev", "MrVBF", "MrRTF", "smoothing"')
+    warning('Formula does not contain any of the expected terms: "elev", "MrVBF", "MrRTF", "smoothing"',immediate.=T)
   }
 
   # Check if terms other tah than start options are listed in the formula
@@ -271,7 +286,7 @@ krige.head <- function(
 
   # Check is MrVBF can be used.
   if ((use.MrVBF || use.MrRTF) && !pkg.env$saga.has.MrVFB)
-    warning('MrVBF & MrRTF cannot calculated because RSAGA is not setup correctly. As a work around, copy the MRVBF and MrRTF grids for all combinations of pslope and ppctl to the working directory.');
+    warning('MrVBF & MrRTF cannot calculated because RSAGA is not setup correctly. As a work around, copy the MRVBF and MrRTF grids for all combinations of pslope and ppctl to the working directory.',immediate.=T);
 
   # Check the inputs 'data' contains columns called 'head'.
   if (!any(match(names(data),'head')))
@@ -297,6 +312,27 @@ krige.head <- function(
     stop('Unknown input fit.variogram.type.')
   }
 
+  # Add a NA buffer if observations are on the boundary AND smoothing or MrVBF are used.
+  # This step was added because smoothing and MrVBF can have NAs at boundaries,
+  # resulting in points and grid cells at the boundary not being able to be estimated. 
+  if (use.MrVBF || use.MrRTF || use.DEMsmoothing) {
+    x.colbuffer = 0;
+    y.rowbuffer = 0;
+    grid.asRaster = raster::raster(grid);
+    if (any(!is.na(grid.asRaster[,1])) || any(!is.na(grid.asRaster[,ncol(grid.asRaster)]))) {
+      x.colbuffer = 5
+    }  
+    if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[,nrow(grid.asRaster)]))) {
+      y.rowbuffer = 5
+    }     
+    if (x.colbuffer>0 || y.rowbuffer>0) {
+      warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
+      grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
+      grid = as(grid.asRaster, class(grid))
+    }
+    rm('grid.asRaster')
+  }
+  
 
   # Find   mid-point of MRVBF & smoothing parameters. This only does anything if
   # the parameters are vectors. It is required to that some initial data is available
@@ -404,7 +440,7 @@ krige.head <- function(
     tmp = extract(dem.asRaster, newdata, method='bilinear');
     filt = is.na(tmp);
     if (any(filt)) {
-      warning(paste(sum(filt),' newdata points were outside the DEM extent and have been removed from the analysis.'),,immediate.=T)
+      warning(paste(sum(filt),' newdata points were outside the DEM extent and have been removed from the analysis.'),immediate.=T)
       newdata = newdata[!filt,];
     }
   }
@@ -698,6 +734,9 @@ krige.head <- function(
       stop('The input string for "data.errvar.colname" is not a column within the input "data".')
     }
 
+    if ( any(data[[data.errvar.colname]]<=0) || any(!is.finite(data[[data.errvar.colname]]))) 
+      stop(paste('The input error data in column ',data.errvar.colname,' must be finite and >0.'))
+    
     data.weights = 1/data[[data.errvar.colname]];
   }
 
@@ -1246,13 +1285,29 @@ krige.head <- function(
     }
 
     # Split up obs point data for cluster
-    njobs = min(nNewData,nclus*5);
+    njobs = min(nNewData,ceiling(nclus));
     splitData = newdata;
     splt = rep(1:njobs, each = ceiling(nNewData/njobs), length.out = nNewData);
     splitData = lapply(as.list(1:njobs), function(w) splitData[splt == w,]);
+    
+    # Check if any list item is empty
+    ind.isempty = c();
+    n.isempty=0
+    for (i in 1:njobs) {
+      if (nrow(splitData[[i]])==0) {
+        n.isempty = n.isempty+1;
+        ind.isempty[n.isempty] = i;
+      }
+    }
+    if (n.isempty>0)
+      splitData = splitData[ -ind.isempty]
+    
+    # Do cross-val
     if (debug.level>0)
       message('... Starting kriging of ', nNewData,' points using a cluster.')
-    est <- do.call("rbind", parLapplyLB(cl, splitData, krige.head.crossval,
+    est <- do.call("rbind", parLapplyLB(cl, splitData, function(lst) 
+                                krige.head.crossval(
+                                        newdata=lst,
                                         formula=formula,
                                         model=model,
                                         model.landtype=model.landtype,
@@ -1281,7 +1336,8 @@ krige.head <- function(
                                         grid.MrRTF=grid.MrRTF,
                                         grid.LandType=grid.LandType,
                                         grid.params=grid.params,
-                                        debug.level=debug.level))
+                                        debug.level=debug.level)
+                                ))
 
     # Close cluster of the input was not a cluster object
     if (is.logical(use.cluster) || is.numeric(use.cluster))

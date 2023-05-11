@@ -1,26 +1,26 @@
 {
-    "id": "4C0D952C",
-    "path": "C:/Users/tpet0008/Documents/HydroMap/R/krige.head.R",
-    "project_path": "R/krige.head.R",
+    "id": "5C989810",
+    "path": "C:/Users/tpet0008/Documents/HydroMap/R/krige.head.crossval.R",
+    "project_path": "R/krige.head.crossval.R",
     "type": "r_source",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1683426418056.0,
+    "created": 1683611401988.0,
     "source_on_save": false,
-    "relative_order": 2,
+    "relative_order": 4,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "1313,80",
-        "scrollLine": "1280"
+        "cursorPosition": "109,71",
+        "scrollLine": "88"
     },
     "folds": "",
-    "lastKnownWriteTime": 1683775888,
+    "lastKnownWriteTime": 1683611445,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1683775888647,
+    "last_content_update": 1683714754839,
     "read_only": false,
     "read_only_alternatives": []
 }
