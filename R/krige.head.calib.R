@@ -44,7 +44,7 @@
 #' @param \code{newdata} is as for \code{data} but the points in a split-sample cross-validation scheme to estimate the interpolation error. Points listed within \code{newdata} should not be
 #' listed within \code{data}. \code{newdata} can be (i) a real scalar >0 and <1  defining the fraction of data points within \code{data} to randomly remove and from \code{data} and use for cross-validation,
 #' (i) an integer scalar >1 and <\code{length(data)} defining the number of data points within \code{data} to randomly remove and from \code{data} and use for cross-validation  (iii) a vector of indexes defining rows numbers within \code{data} to be extract and uses for the cross-validation; (iv) a vector of logicals
-#' with \ciode{TRUE} defining rows numbers within \code{data} to be extract and used for the cross-validation, (v) a \code{SpatialPointsDataFrame} variable defining the complete data for cross validation - which must have identical columns to \code{data}.
+#' with \code{TRUE} defining rows numbers within \code{data} to be extract and used for the cross-validation, (v) a \code{SpatialPointsDataFrame} variable defining the complete data for cross validation - which must have identical columns to \code{data}.
 #' The default is \code{newdata=0.5},
 #'
 #' @param \code{data.errvar.colname} see \code{\link{krige.head}}.
