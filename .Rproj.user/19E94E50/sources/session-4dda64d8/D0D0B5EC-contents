@@ -3,10 +3,8 @@
 #' \code{krige.head.calib} calibrates parameters to minimise the interpolation error.
 #'
 #' @details This function optimises the parameters for the spatial interpolation so as to minimise the
-#' interpolation error - which by default is defined using a formal likelihood function. Once this function has return
-#' the optimal parameter set, then the mapping can be undertaken using \code{\link{krige.head}}.
-#' Importantly, the mapping approach used for the calibration (e.g. the formula etc) must be identical to that
-#' input to \code{\link{krige.head}}.
+#' interpolation error, which by default is defined using a formal likelihood function. Once this function has return
+#' the optimal parameter set, the mapping can be undertaken using \code{\link{krige.head}} (see examples below).
 #'
 #' The mapping parameters are estimated using a mixed data-type (i.e. real and integer parameters) split-sample maximum likelihood global optimisation. The optimisation by default
 #' includes the variogram parameters (e.g. range, sill and nuggest) and the search parameters for local kriging (e.g. radius, minimum and
@@ -22,8 +20,8 @@
 #'  \item{The available input point data must be split up into \code{data} and \code{newdata}. The point observations within \code{data} are used to estimate the water level at the locations defined
 #'  within \code{newdata}. The difference between the observed and estimated values defines the interpolation prediction error. This process also gives the kriging variance at
 #'  each \code{newdata} location. The points used for \code{data} and \code{newdata} should both cover all types of terrain, geology, landuse and the full mapping extend so as to avoid bias. Also, changing either may
-#'  change the calibration solution. }
-#'  \item{The \code{objFunc.type} allows for maximum likelihood estimation - that is optimisation that accounts for the expected kriging error. See \code{objFunc.type} below for details.
+#'  change the calibration solution.}
+#'  \item{The \code{objFunc.type} allows for maximum likelihood estimation - that is optimisation that accounts for the expected kriging error. See \code{objFunc.type} below for details.}
 #' }
 #'
 #' In using this function, the primary user decisions are:
@@ -131,7 +129,7 @@
 #'
 #' # Load a model variogram and mapping parameters found to be effective.
 #' data('mapping.parameters')
-#
+#'
 #' # Define a simple kriging formula without MrVBF terms that does not require the package RSAGA.
 #' f <- as.formula('head ~ elev + smoothing')
 #'
@@ -140,33 +138,17 @@
 #'
 #' # Calibrate the mapping parameters with 25% of the data randomly selected at 2 cores.
 #' calib.results <- krige.head.calib(formula=f, grid=DEM, data=obs.data, newdata=0.25, nmin=0, nmax=Inf, maxdist=Inf, omax=0,
-#'    data.errvar.colname='total_err_var', model = variogram.model,  fit.variogram.type=1,
-#'    debug.level=0, use.cluster = 2)
+#'                       data.errvar.colname='total_err_var', model = variogram.model,  fit.variogram.type=1,
+#'                       pop.size.multiplier=1, debug.level=0, use.cluster = 2)
 #'
-#' # Reformat the parameter to a named list. This is just for ease of use and the need for
-#' this may be removed in future versions.
-#' params.all = c(mrvbf.pslope=NA,mrvbf.ppctl=NA,smooth.std=NA,nmax=NA,maxdist=NA,
-#'                kappa_model_1 = NA, ang1_model_1 = NA, anis1_model_1 = NA,
-#'                nmax.fixedHead = NA);
-#' for (i in 1:length(head.calib$param.Names)) {
-#'  params.all[[calib.results$param.Names[i]]] = calib.results$par[i]
-#' }
-#' params.all.names=names(params.all);
+#' # Grid the observed head using ONLY the training data from the calibration (and all cores) and then map..
+#' head.grid.training <- krige.head(calibration.results = calib.results, use.cluster = T)
+#' spplot(head.grid.training)
+#' 
+#' # Grid the observed head using ALL of the obsrved data from the calibration (and all cores).
+#' head.grid.all <- krige.head(calibration.results = calib.results, data=obs.data, use.cluster = T)
+#' spplot(head.grid.all)
 #'
-#' # Rebuild the variogram with the calibrated parameters.
-#' varigram.model = vgm(psill=params.all[['psill_model_1']], model='Mat',
-#'                    range= params.all[['range_model_1']] , nugget=params.all[['nug']],
-#'                    kappa=params.all[['kappa_model_1']] );
-#'
-#' # Grid the observed head data.
-#' head.map <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
-#' model=variogram.model, smooth.std=params.all[['smooth.std']], maxdist=params.all[['maxdist']],
-#' nmax=params.all[['nmax']], fit.variogram.type=3, debug.level=1)
-#'
-#' # Write the grids to ARCMAP ASCII grids
-#' write.asciigrid(head.map, 'head.asc',1);
-#' write.asciigrid(head.map, 'KrigingVariance.asc',2);
-
 #' @export
 krige.head.calib <-
   function(formula = as.formula("head ~ elev + MrVBF + MrRTF + smoothing"),
@@ -197,6 +179,17 @@ krige.head.calib <-
     if (debug.level>0)
       message('Calibrating mapping parameters.')
 
+    # Store input parameter values (exluding variogram params). These are updated if they're calibrated.
+    solution = list()
+    solution$parameter.Values$mrvbf.pslope = mrvbf.pslope
+    solution$parameter.Values$mrvbf.ppctl = mrvbf.ppctl
+    solution$parameter.Values$smooth.std = smooth.std
+    solution$parameter.Values$nmax = nmax
+    solution$parameter.Values$nmax.fixedHead = nmax.fixedHead
+    solution$parameter.Values$maxdist = maxdist
+    solution$parameter.Values$nmin = nmin
+    solution$parameter.Values$omax = omax
+    
     # Assess formula componants
     var.names = all.vars(as.formula(formula));
     use.MrVBF = any(match(var.names, 'MrVBF'));
@@ -757,7 +750,7 @@ krige.head.calib <-
     } else {
       message('... Starting continuous value calibration of the following parameters:',paste( param.Names,sep="",collapse=', '))
     }
-    solution = genoud(
+    genoud.solution = genoud(
       HydroMap:::get.objFunc,
       nvars = nParams,
       max = doObjMaximisation,
@@ -806,7 +799,7 @@ krige.head.calib <-
 
     # Store the returned value for use when calling get.objFunc directly.
     # This is required if some of the parameters have discrete parameters (which are used by the lookup table to transform to meaningful values)
-    solution$par.pretransformed = solution$par;
+    genoud.solution$par.pretransformed = genoud.solution$par;
 
     # Back transform parameters
     lookup.table.names = names(param.IntegerLookupTable)
@@ -817,26 +810,79 @@ krige.head.calib <-
 
       # Get non-transformed value from table.
       if (isIntegerParam) {
-        solution$par[i] = param.IntegerLookupTable[[param.Names[i]]][solution$par[i], 2]
+        genoud.solution$param.Values[i] = param.IntegerLookupTable[[param.Names[i]]][genoud.solution$par[i], 2]
       }
     }
-
 
     # Print summary
     message(paste('    Best objective function value:', solution$value))
     for (i in 1:nParams)
-      message(paste('    Parameter ', param.Names[i], ' = ', solution$par[i]))
+      message(paste('    Parameter ', param.Names[i], ' = ', genoud.solution$param.Values[i]))
+    
+    # Add formula
+    solution$inputs$formula = formula;     
+    
+    # Add data and new data
+    solution$inputs$data = data
+    solution$inputs$newdata = newdata
+    solution$inputs$grid = grid
+    
+    # Add remaining inputs 
+    solution$inputs$grid.landtype.colname = grid.landtype.colname
+    solution$inputs$data.fixedHead = data.fixedHead
+    solution$inputs$data.errvar.colname = data.errvar.colname  
 
-    # Add parameter names to the solution list variable.
-    solution$param.Names = param.Names
-
+    ind = match(param.Names,'mrvbf.pslope')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$mrvbf.pslope = genoud.solution$param.Values[ind]
+    
+    ind = match(param.Names,'mrvbf.ppctl')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$mrvbf.ppctl = genoud.solution$param.Values[ind]
+    
+    ind = match(param.Names,'smooth.std')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$smooth.std = genoud.solution$param.Values[ind]
+    
+    ind = match(param.Names,'nmax')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$nmax = genoud.solution$param.Values[ind]
+    
+    ind = match(param.Names,'nmax.fixedHead')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$nmax.fixedHead = genoud.solution$param.Values[ind]
+    
+    ind = match(param.Names,'maxdist')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$maxdist = genoud.solution$param.Values[ind]
+    
+    ind = match(param.Names,'nmin')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$nmin = genoud.solution$param.Values[ind]
+    
+    ind = match(param.Names,'omax')
+    ind = na.omit(ind)
+    if (length(ind)==1 && is.finite(ind))
+      solution$parameter.Values$omax = genoud.solution$param.Values[ind]
+    
+    # Add variogram model
+    if (fit.variogram.type == 1)
+      solution$variogramModel = get.variogramModel(genoud.solution$par, param.Names, model)
+    
+    
     # Add the lookup table to the solution. This is required if the the objectiveget.objFunc() is to be directly called.
     solution$lookup.table = param.IntegerLookupTable;
-
-    # Add data and new data
-    solution$data = data
-    solution$newdata = newdata
-
+    
+    # Add calibration settings
+    solution$genoud.output = genoud.solution
+    
     return(solution)
 
   }

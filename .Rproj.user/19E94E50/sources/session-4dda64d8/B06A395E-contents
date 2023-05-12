@@ -31,4 +31,7 @@ obs.data$total_err_var = pmax(obs.data$total_err_var, 0.05)
 # Calibrate the mapping parameters with 25% of the data randomly selected at 2 cores.
 calib.results <- krige.head.calib(formula=f, grid=DEM, data=obs.data, newdata=0.25, nmin=0, nmax=Inf, maxdist=Inf, omax=0,
                                   data.errvar.colname='total_err_var', model = variogram.model,  fit.variogram.type=1,
-                                  debug.level=0, use.cluster = 2)
+                                  pop.size.multiplier=1, debug.level=0, use.cluster = 2)
+
+# Map calibration results using all of the observed data abd all cores. 
+head.grid <- krige.head(calibration.results = calib.results, data=obs.data, use.cluster = T)

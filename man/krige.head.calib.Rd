@@ -146,7 +146,34 @@ As per \code{genoud} plus the parameter values in the transformed calibration sp
 \code{krige.head.calib} calibrates parameters to minimise the interpolation error.
 }
 \details{
+This function optimises the parameters for the spatial interpolation so as to minimise the
+interpolation error, which by default is defined using a formal likelihood function. Once this function has return
+the optimal parameter set, the mapping can be undertaken using \code{\link{krige.head}} (see examples below).
 
+The mapping parameters are estimated using a mixed data-type (i.e. real and integer parameters) split-sample maximum likelihood global optimisation. The optimisation by default
+includes the variogram parameters (e.g. range, sill and nuggest) and the search parameters for local kriging (e.g. radius, minimum and
+maximum number of observations to use). Optimising these parameters is not common in kriging. It is done herein because trials for Victoria,
+Australia, showed that calibrating these parameters produced significantly lower cross-validation errors (i.e. the error in predicting the observations
+removed from the optimisation) compared to the standard approach using fitting to an experimental variogram. The optimisation is
+numerically challenging and the following factors should be considered before use:
+
+\itemize{
+ \item{Optimisation of the parameters \code{mrvbf.pslope}, \code{mrvbf.ppctl} and \code{smooth.std} often required the creating of raster grids for every parameter combination. To ease the computation burden, these parameters should be treated as disrcete, not continuous, numbers.}
+ \item{The optimisation package \code{rgeoud} is used herein. See the \code{rgeoud} documentation for details of the optimisation scheme.}
+ \item{Trials have established default calibration parameters and settings that were effective for Victoria, Australia. There is no guarantee they will be effective for other regions.}
+ \item{The available input point data must be split up into \code{data} and \code{newdata}. The point observations within \code{data} are used to estimate the water level at the locations defined
+ within \code{newdata}. The difference between the observed and estimated values defines the interpolation prediction error. This process also gives the kriging variance at
+ each \code{newdata} location. The points used for \code{data} and \code{newdata} should both cover all types of terrain, geology, landuse and the full mapping extend so as to avoid bias. Also, changing either may
+ change the calibration solution.}
+ \item{The \code{objFunc.type} allows for maximum likelihood estimation - that is optimisation that accounts for the expected kriging error. See \code{objFunc.type} below for details.}
+}
+
+In using this function, the primary user decisions are:
+\itemize{
+ \item{The kriging with external drift formula defining the independent gridded variables deemed to predict the groundwater elevation. See the input \code{formula}.}
+ \item{The type of the objective function, defined by the input \code{objFunc.type}}
+ \item{The type of variogram model, defined by the input \code{model}}
+ }
 }
 \examples{
 # Load packages in case they have not loaded.
@@ -167,6 +194,7 @@ data('victoria.groundwater')
 
 # Load a model variogram and mapping parameters found to be effective.
 data('mapping.parameters')
+
 # Define a simple kriging formula without MrVBF terms that does not require the package RSAGA.
 f <- as.formula('head ~ elev + smoothing')
 
@@ -175,32 +203,17 @@ varigram.model <- vgm(psill=25, model="Mat", range=5000, nugget=5, kappa = 0.5)
 
 # Calibrate the mapping parameters with 25\% of the data randomly selected at 2 cores.
 calib.results <- krige.head.calib(formula=f, grid=DEM, data=obs.data, newdata=0.25, nmin=0, nmax=Inf, maxdist=Inf, omax=0,
-   data.errvar.colname='total_err_var', model = variogram.model,  fit.variogram.type=1,
-   debug.level=0, use.cluster = 2)
+                      data.errvar.colname='total_err_var', model = variogram.model,  fit.variogram.type=1,
+                      pop.size.multiplier=1, debug.level=0, use.cluster = 2)
 
-# Reformat the parameter to a named list. This is just for ease of use and the need for
-this may be removed in future versions.
-params.all = c(mrvbf.pslope=NA,mrvbf.ppctl=NA,smooth.std=NA,nmax=NA,maxdist=NA,
-               kappa_model_1 = NA, ang1_model_1 = NA, anis1_model_1 = NA,
-               nmax.fixedHead = NA);
-for (i in 1:length(head.calib$param.Names)) {
- params.all[[calib.results$param.Names[i]]] = calib.results$par[i]
-}
-params.all.names=names(params.all);
+# Grid the observed head using ONLY the training data from the calibration (and all cores) and then map..
+head.grid.training <- krige.head(calibration.results = calib.results, use.cluster = T)
+spplot(head.grid.training)
 
-# Rebuild the variogram with the calibrated parameters.
-varigram.model = vgm(psill=params.all[['psill_model_1']], model='Mat',
-                   range= params.all[['range_model_1']] , nugget=params.all[['nug']],
-                   kappa=params.all[['kappa_model_1']] );
+# Grid the observed head using ALL of the obsrved data from the calibration (and all cores).
+head.grid.all <- krige.head(calibration.results = calib.results, data=obs.data, use.cluster = T)
+spplot(head.grid.all)
 
-# Grid the observed head data.
-head.map <- krige.head(formula=f, grid=DEM, data=obs.data, data.errvar.colname='total_err_var',
-model=variogram.model, smooth.std=params.all[['smooth.std']], maxdist=params.all[['maxdist']],
-nmax=params.all[['nmax']], fit.variogram.type=3, debug.level=1)
-
-# Write the grids to ARCMAP ASCII grids
-write.asciigrid(head.map, 'head.asc',1);
-write.asciigrid(head.map, 'KrigingVariance.asc',2);
 }
 \references{
 Gallant, J.C., Dowling, T.I. (2003) A multiresolution index of valley bottom flatness for mapping depositional areas, Water Resources Research, 39/12:1347-1359
