@@ -29,7 +29,7 @@ import.DEM <- function(grid, debug.level=0 ) {
 	  }
 
 	  # Read in grid
-	  grid = read.asciigrid(fname.dem,colname='DEM');
+	  grid = sp::read.asciigrid(fname.dem,colname='DEM');
 
 	  # Remove NULLS
 	  grid = data.frame(grid)

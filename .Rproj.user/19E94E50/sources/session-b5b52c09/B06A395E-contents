@@ -1,13 +1,6 @@
-library(sp)
-library(grid)
-library(gstat)
-library(raster)
 library(RSAGA)
-library(parallel)
-library(rgenoud)
 
-
-set.env()
+set.env(saga.path = 'C:/Program Files (x86)/saga-9.0.1_x64',saga.modules = 'C:/Program Files (x86)/saga-9.0.1_x64/tools')
 
 # Load water table observations from  April 2000 for Victoria, Australia and a 250m state-wide DEM.
 data('victoria.groundwater')
@@ -38,8 +31,6 @@ head.grid <- krige.head(calibration.results = calib.results, data=obs.data, use.
 
 # Re-calibrate using MrVBF
 #------------------------------------
-
-set.env(saga.path = 'C:/Program Files (x86)/saga-9.0.1_x64',saga.modules = 'C:/Program Files (x86)/saga-9.0.1_x64/tools')
 
 f <- as.formula('head ~ elev + MrVBF + smoothing')
 

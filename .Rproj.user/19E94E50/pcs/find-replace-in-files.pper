@@ -1,6 +1,6 @@
 {
     "dialog-state": {
-        "query": "predict(",
+        "query": "read.asciigrid(",
         "path": "",
         "regex": false,
         "caseSensitive": false,
@@ -11,7 +11,7 @@
         "useGitGrep": false,
         "excludeGitIgnore": true,
         "excludeFilePatterns": [],
-        "resultsCount": 10,
+        "resultsCount": 5,
         "errorCount": 0,
         "replaceErrors": "",
         "projectRelative": true

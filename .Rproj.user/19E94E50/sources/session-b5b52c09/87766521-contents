@@ -24,7 +24,7 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
     fname.dem <- paste(pkg.env$working.path,grid,sep=.Platform$file.sep);
 
     # Read in grid
-    grid = read.asciigrid(fname.dem,colname='elev');
+    grid = sp::read.asciigrid(fname.dem,colname='elev');
     sp::coordinates(grid) = ~Easting + Northing;
     sp::gridded(grid)=TRUE;
     sp::fullgrid(grid)=TRUE;
@@ -112,20 +112,21 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
 
     	# Calc. MrVBF
       RSAGA::rsaga.geoprocessor(lib = 'ta_morphometry', module='Multiresolution Index of Valley Bottom Flatness (MRVBF)',
-    	param = list(DEM = 'DEM.sgrd', MRVBF=paste(fname.MrVBF,'.sgrd',sep=''),MRRTF=paste(fname.MrRTF,'.sgrd',sep=''),P_SLOPE=pslope,P_PCTL=ppctl),env = pkg.env$saga.settings);
+    	              param = list(DEM = 'DEM.sgrd', MRVBF=paste(fname.MrVBF,'.sgrd',sep=''),MRRTF=paste(fname.MrRTF,'.sgrd',sep=''),
+    	                           P_SLOPE=pslope,P_PCTL=ppctl),env = pkg.env$saga.settings, show.output.on.console=F, warn=F, flags='s');
 
     	# Convert SAGA MrVBF format to ASCII DEM.
       if (debug.level>0)
     	  message('... Converting SAGA grids to .ASC.');
 
     	if (do.MrVBF) {
-    	  RSAGA::rsaga.sgrd.to.esri(paste(fname.MrVBF,'.sgrd',sep=''),env = pkg.env$saga.settings);
+    	  RSAGA::rsaga.sgrd.to.esri(paste(fname.MrVBF,'.sgrd',sep=''),env = pkg.env$saga.settings,  show.output.on.console=F, warn=F, flags='s');
     	  file.remove(paste(fname.MrVBF,'.sgrd',sep=''));
     	  file.remove(paste(fname.MrVBF,'.mgrd',sep=''));
     	  file.remove(paste(fname.MrVBF,'.sdat',sep=''));
     	}
     	if (do.MrRTF) {
-    	  RSAGA::rsaga.sgrd.to.esri(paste(fname.MrRTF,'.sgrd',sep=''),env = pkg.env$saga.settings);
+    	  RSAGA::rsaga.sgrd.to.esri(paste(fname.MrRTF,'.sgrd',sep=''),env = pkg.env$saga.settings,  show.output.on.console=F, warn=F, flags='s');
     	  file.remove(paste(fname.MrRTF,'.sgrd',sep=''));
     	  file.remove(paste(fname.MrRTF,'.mgrd',sep=''));
     	  file.remove(paste(fname.MrRTF,'.sdat',sep=''));
@@ -149,7 +150,7 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
     	    message('... Reading in MrVBF .asc file.');
 
     	  # read in file with grid data
-    	  grid.MrVBF = read.asciigrid(paste(fname.MrVBF,'.asc',sep=''),colname=var.name.MrVBF);
+    	  grid.MrVBF = sp::read.asciigrid(paste(fname.MrVBF,'.asc',sep=''),colname=var.name.MrVBF);
     	  sp::gridded(grid.MrVBF) = TRUE;
     	  sp::fullgrid(grid.MrVBF) = TRUE;
 
@@ -186,7 +187,7 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
     	    message('... Reading in MrRTF .asc file.');
 
     	  # read in file with grid data
-    	  grid.MrRTF = read.asciigrid(paste(fname.MrRTF,'.asc',sep=''),colname=var.name.MrRTF);
+    	  grid.MrRTF = sp::read.asciigrid(paste(fname.MrRTF,'.asc',sep=''),colname=var.name.MrRTF);
     	  sp::gridded(grid.MrRTF) = TRUE;
     	  sp::fullgrid(grid.MrRTF) = TRUE;
 

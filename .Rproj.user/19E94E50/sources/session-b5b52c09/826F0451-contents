@@ -24,7 +24,7 @@ get.elev <- function(data, grid, debug.level=0) {
     fname.dem <- paste(pkg.env$working.path,grid,sep=.Platform$file.sep);  
 
     # Read in grid
-    grid = read.asciigrid(fname.dem,colname='DEM');
+    grid = sp::read.asciigrid(fname.dem,colname='DEM');
     sp::gridded(grid)=FALSE;
     grid = data.frame(grid);
     grid= grid[,1:3];
