@@ -176,15 +176,6 @@ In using this function, the primary user decisions are:
  }
 }
 \examples{
-# Load packages in case they have not loaded.
-library(sp)
-library(grid)
-library(gstat)
-library(raster)
-library(RSAGA)
-library(snow)
-library(parallel)
-library(rgenoud)
 
 # Set enironment path for hydroMap
 set.env()
@@ -199,7 +190,7 @@ data('mapping.parameters')
 f <- as.formula('head ~ elev + smoothing')
 
 # Define an initial isotropic variogram model. All of the parameters will be calibrated.
-varigram.model <- vgm(psill=25, model="Mat", range=5000, nugget=5, kappa = 0.5)
+varigram.model <- gstat::vgm(psill=25, model="Mat", range=5000, nugget=5, kappa = 0.5)
 
 # Calibrate the mapping parameters with 25\% of the data randomly selected at 2 cores.
 calib.results <- krige.head.calib(formula=f, grid=DEM, data=obs.data, newdata=0.25, nmin=0, nmax=Inf, maxdist=Inf, omax=0,

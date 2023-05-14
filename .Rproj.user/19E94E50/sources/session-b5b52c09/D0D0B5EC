@@ -1,0 +1,26 @@
+{
+    "id": "D0D0B5EC",
+    "path": "C:/Users/tpet0008/Documents/HydroMap/R/krige.head.calib.R",
+    "project_path": "R/krige.head.calib.R",
+    "type": "r_source",
+    "hash": "685245459",
+    "contents": "",
+    "dirty": false,
+    "created": 1683611155091.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "113,0",
+        "scrollLine": "106"
+    },
+    "folds": "550|33|565|4|\n",
+    "lastKnownWriteTime": 1684052996,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1684052997015,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -171,16 +171,6 @@ In using this function, the primary user decisions are:
  }
 }
 \examples{
-# Load packages in case they have not loaded.
-library(sp)
-library(raster)
-library(grid)
-library(gstat)
-library(raster)
-library(RSAGA)
-library(snow)
-library(parallel)
-library(rgenoud)
 
 # Set enironment path for hydroMap
 set.env()
@@ -206,10 +196,10 @@ model=model, smooth.std=smooth.std, nmax=Inf, maxdist=Inf, omax=0, fit.variogram
 
 # Calculate the depth to water table.
 # NOTE, this required getting the DEM elevation into the head grids - event if there are different number of finite values.
-gridded(heads)=F 
-gridded(DEM)=F
+sp::gridded(heads)=F 
+sp::gridded(DEM)=F
 heads$DBNS = DEM$DEM - heads$head
-gridded(heads)=T
+sp::gridded(heads)=T
 
 # Map depth to water table.
 spplot(heads,3, scales = list(draw = TRUE))

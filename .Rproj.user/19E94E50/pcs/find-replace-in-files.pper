@@ -1,15 +1,17 @@
 {
     "dialog-state": {
-        "query": "weights",
+        "query": "predict(",
         "path": "",
         "regex": false,
         "caseSensitive": false,
         "wholeWord": false,
-        "filePatterns": [],
+        "filePatterns": [
+            "packageSource"
+        ],
         "useGitGrep": false,
         "excludeGitIgnore": true,
         "excludeFilePatterns": [],
-        "resultsCount": 38,
+        "resultsCount": 10,
         "errorCount": 0,
         "replaceErrors": "",
         "projectRelative": true
