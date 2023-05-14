@@ -54,7 +54,7 @@ f <- as.formula('head ~ elev + smoothing')
 
 # Define the base variogram model. Note, only the structure is used - not
 # the valuaes.
-variogram.model = vgm(psill=10, model='Mat', range= 10000 , nugget=1, kappa=0.1);
+variogram.model = gstat::vgm(psill=10, model='Mat', range= 10000 , nugget=1, kappa=0.1);
 
 # Enforce a minimum error variance of 5cm ^2 
 obs.data$total_err_var = pmax(obs.data$total_err_var, 0.05^2)
@@ -76,7 +76,7 @@ calib.results <- krige.head.calib(formula=f, grid=DEM, data=obs.data, newdata=0.
 head.grid <- krige.head(calibration.results = calib.results, data=obs.data, use.cluster = T)
 
 # Map the head elevation and kriging uncertainty.
-spplot(head.grid, scales = list(draw = TRUE))
+sp::spplot(head.grid, scales = list(draw = TRUE))
 
 # Calculate the depth to water table.
 # NOTE, this requires getting the DEM elevation into the head grids - event if there are a 
@@ -87,5 +87,5 @@ head.grid$DBNS = DEM$DEM - head.grid$head
 sp::gridded(head.grid)=T
 
 # Map the depth to water table.
-spplot(head.grid,3, scales = list(draw = TRUE))
+sp::spplot(head.grid,3, scales = list(draw = TRUE))
 ```
