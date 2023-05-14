@@ -1159,7 +1159,7 @@ krige.head <- function(
 
       # Close cluster of the input was not a cluster object
       if (is.logical(use.cluster) || is.numeric(use.cluster))
-        stopCluster(cl)
+        parallel::stopCluster(cl)
     } else {
       if (nsim==0) {
         message('... Starting kriging of ', ncells,' grid cells using 1 core.')
@@ -1351,7 +1351,7 @@ krige.head <- function(
 
     # Close cluster of the input was not a cluster object
     if (is.logical(use.cluster) || is.numeric(use.cluster))
-      stopCluster(cl)
+      parallel::stopCluster(cl)
 
   } else {
     if (debug.level>0)

@@ -789,7 +789,7 @@ krige.head.calib <-
     if (!is.logical(use.local.cluster)) {
       if (debug.level>0)
         message('... Closing cluster.')
-      stopCluster(use.local.cluster)
+      parallel::stopCluster(use.local.cluster)
     }
 
     # Store the returned value for use when calling get.objFunc directly.
