@@ -429,22 +429,13 @@ krige.head.calib <-
       stop('newdata input type is invalid. It must be in integer scalar >1, a real scalar >0 and <1, a vector of data row IDs or T/F or or a SpatialPointsDataFrame')
     } else {
 
-      # newdata and data have been input as SpatialPointsDataFrames
-      # Therefore, check if newdata contains the required columns of data.
-      # Get point data (if required)
-      if ((use.MrVBF && !('MrVBF' %in% names(newdata))) ||
-          (use.MrRTF && !('MrRTF' %in% names(newdata))) ||
-          (use.DEMsmoothing && !('smoothing' %in% names(newdata))) ||
-          (('DEM' %in% names(newdata)))) {
-
-        if (debug.level>0)
-          message(' ... Getting point newdata');
-        pkg.env$DEM.data <<- NULL; pkg.env$MrVBF.data <<- NULL; pkg.env$MrRTF.data <<- NULL; pkg.env$smoothDEM.data <<- NULL
-        newdata = get.allData(formula = formula, newdata, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp)
-        pkg.env$DEM.data <<- NULL; pkg.env$MrVBF.data <<- NULL; pkg.env$MrRTF.data <<- NULL; pkg.env$smoothDEM.data <<- NULL
-      }
-
-
+      # Check that newdata and data have the same colum names.
+      if (any(!(names(data) == names(newdata))))
+        stop('The inputs data and newdata must have the same column names when both are input as SpatialPointsDataFrames.')
+      
+      # Reset package enviro data      
+      pkg.env$DEM.data <<- NULL; pkg.env$MrVBF.data <<- NULL; pkg.env$MrRTF.data <<- NULL; pkg.env$smoothDEM.data <<- NULL
+    
     }
     message(paste('... Number of obs points used for kriging:',length(data)))
     message(paste('... Number of obs points used for obj. function:',length(newdata)))
@@ -806,11 +797,13 @@ krige.head.calib <-
       # Get non-transformed value from table.
       if (isIntegerParam) {
         genoud.solution$param.Values[i] = param.IntegerLookupTable[[param.Names[i]]][genoud.solution$par[i], 2]
+      } else {
+        genoud.solution$param.Values[i] = genoud.solution$par[i];
       }
     }
 
     # Print summary
-    message(paste('    Best objective function value:', solution$value))
+    message(paste('    Best objective function value:', genoud.solution$value))
     for (i in 1:nParams)
       message(paste('    Parameter ', param.Names[i], ' = ', genoud.solution$param.Values[i]))
     
