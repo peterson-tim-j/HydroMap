@@ -1136,8 +1136,8 @@ krige.head <- function(
 
     # Do prediction
     if (nclus>1) {
-      clusterEvalQ(cl, library(gstat));
-      clusterExport(cl, list("gs"), envir = environment());
+      parallel::clusterEvalQ(cl, library(gstat));
+      parallel::clusterExport(cl, list("gs"), envir = environment());
 
       if (nsim==0) {
         splt = rep(1:nclus, each = ceiling(ncells/nclus), length.out = ncells)
@@ -1290,8 +1290,8 @@ krige.head <- function(
       is.cluster.setup=TRUE
 
       # Add libraries to nodes.
-      clusterEvalQ(cl, library(gstat))
-      clusterEvalQ(cl, library(raster))
+      parallel::clusterEvalQ(cl, library(gstat))
+      parallel::clusterEvalQ(cl, library(raster))
     }
 
     # Split up obs point data for cluster
