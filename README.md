@@ -101,7 +101,8 @@ calib.results <- krige.head.calib(formula=f, grid=DEM, data=trainingData, newdat
 head.grid <- krige.head(calibration.results = calib.results, data=obs.data, use.cluster = T)
 
 # Map the head elevation and kriging uncertainty.
-sp::spplot(head.grid, scales = list(draw = TRUE))
+plot(raster::raster(head.grid,1), 'head')
+raster::contour(raster::raster(head.grid,1), levels = seq(70,125,by=5), add=T)
 
 # Calculate the depth to water table.
 # NOTE, this requires getting the DEM elevation into the head grids - event if there are a 
