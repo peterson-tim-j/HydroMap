@@ -28,7 +28,10 @@ To install the package, following these steps:
 1. Open the help documentation using `?krige.head` and follow the example.  
 
 # Examples: Data setup
-The examples below all use the same gridded data and point data. Below the data is imported and cropped to central northern Victoria. Also, here the calibration training and prediction data are pre-defined. This is done to ensure that the results from each of the following examples are comparable.
+The examples below all use the same gridded data and point data. Below the data is imported and cropped to central northern Victoria. Also, here the calibration training and prediction data are pre-defined. This is done to ensure that the results from each of the following examples are comparable. The maps below show the location and head of the calibration training data and prediction data.
+
+<a href="url"><img src="https://user-images.githubusercontent.com/8623994/240219319-6e472aab-ff47-4976-b25b-0eedfd7d1b10.png" width="35%" height="35%" ></a>  <a href="url"><img src="https://user-images.githubusercontent.com/8623994/240218884-bfdcf190-8392-41fc-bee4-ed4aafbc0436.png" width="35%" height="35%" ></a>
+Figure 3. Point data for examples
 
 ```R
 library(RSAGA)
@@ -118,11 +121,13 @@ sp::spplot(head.grid.example1,'DTWT.cats', scales = list(draw = TRUE))
 dev.off()
 ```
 
-
-
 # Example 2: Kriging with land surface elevation and smoothing
 
-In this example point groundwater head observations are spatially interpolated using co-variates of the land surface elevation (from the digital elevation model, DEM) and a local smoothing of the DEM. The magnitude of the smoothing is calibrated along with the variogram parameters. Note, the only difference to example 1 is the formula and the parameters being calibrated (i.e. `smooth.std`)  
+In this example point groundwater head observations are spatially interpolated using co-variates of the land surface elevation (from the digital elevation model, DEM) and a local smoothing of the DEM. The magnitude of the smoothing is calibrated along with the variogram parameters. Note, the only difference to example 1 is the formula and the parameters being calibrated (i.e. `smooth.std`). Below is a map of the final estimate of the groundwater elevation (head), and depth to water table (DTWT).
+<p align="center"><a href="url"><img src="https://user-images.githubusercontent.com/8623994/240240662-e28fbd6a-bed5-492e-addf-47f6e1cf9e70.png" width="50%" height="75%" ></a> </p>
+<p align="center">Figure 6.  Example 2 groundwater elevation.</p>
+<p align="center"><a href="url"><img src="https://user-images.githubusercontent.com/8623994/240240715-2a9cdea3-2706-41f8-a6a1-62f7d561458d.png" width="50%" height="80%" ></a> </p>
+<p align="center"> Figure 7. Example 2 depth to water table.</p>
 
 ```R
 # Define the covariates for the kriging.
@@ -157,7 +162,11 @@ dev.off()
 
 # Example 3: Kriging with land surface elevation, smoothing and MrVBF and MrRTF
 
-In this example point groundwater head observations are spatially interpolated using co-variates of the land surface elevation (from the digital elevation model, DEM), MrVBF measure of the valley floor and a local smoothing of the DEM. The magnitude of the smoothing is calibrated along with the variogram parameters. 
+In this example point groundwater head observations are spatially interpolated using co-variates of the land surface elevation (from the digital elevation model, DEM), MrVBF measure of the valley floor and a local smoothing of the DEM. The magnitude of the smoothing is calibrated along with the variogram parameters. Below is a map of the final estimate of the groundwater elevation (head), and depth to water table (DTWT).
+<p align="center"><a href="url"><img src="https://user-images.githubusercontent.com/8623994/240235636-d94608aa-64d2-4e58-a20d-9955a7bc00a3.png" width="50%" height="75%" ></a> </p>
+<p align="center">Figure 8.  Example 3 groundwater elevation.</p>
+<p align="center"><a href="url"><img src="https://github.com/peterson-tim-j/HydroMap/assets/8623994/06f40717-15b5-42ff-8d55-117cd41c26d1" width="50%" height="80%" ></a> </p>
+<p align="center"> Figure 9. Example 3 depth to water table.</p>
 
 ```R
 # Define the covariates for the kriging.
