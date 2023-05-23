@@ -148,10 +148,10 @@
 #' sp::gridded(heads)=T
 #' 
 #' # Map depth to water table.
-#' spplot(heads,3, scales = list(draw = TRUE))
+#' sp::spplot(heads,3, scales = list(draw = TRUE))
 #' 
 #' # Export grids to an ARCMAP *.asc file
-#' write.asciigrid(heads,'DBNS.asc',3,na.value = -999)
+#' sp::write.asciigrid(heads,'DBNS.asc',3,na.value = -999)
 #'
 #' @export
 krige.head <- function(
@@ -164,8 +164,8 @@ krige.head <- function(
   newdata=NULL,
   data.errvar.colname = NULL,
   model=NULL,
-  mrvbf.pslope = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.5, 1.5, length.out = 11)}else{NULL},
-  mrvbf.ppctl  = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.5, 1.5, length.out = 11)}else{NULL},
+  mrvbf.pslope = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.2, 2.5, by = 0.1)}else{NULL},
+  mrvbf.ppctl  = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.2, 2.5, by = 0.1)}else{NULL},
   smooth.std = seq(0.5,1.5,length.out=11),
   nmax = if(is.character(data)){-999}else{ceiling(seq(0.1,0.20,0.01)*length(data))},
   nmax.fixedHead = if(!is.null(data.fixedHead)) {seq(10,110,length=11)}else{NULL},
@@ -187,7 +187,7 @@ krige.head <- function(
 
   # Check gstst is loaded
   if (!require('gstat',quietly = T))
-    stop('Please install the gstst package. It is required by HydroMap.')
+    stop('Please install the gstat package. It is required by HydroMap.')
   
   # Remove function details from warnings
   options(warning.expression=NULL)
@@ -264,6 +264,11 @@ krige.head <- function(
   if (is.null(smooth.std) || is.na(smooth.std) || is.na(use.DEMsmoothing))
     use.DEMsmoothing = FALSE;
 
+  # Check RSAGA is loaded
+  if (use.MrVBF || use.MrRTF)
+    if (!require('RSAGA',quietly = T))
+      stop('Please install the RSAGA package. It is required by HydroMap.')
+  
 
   # Check variable names
   if (!use.elev && !use.MrVBF && !use.MrRTF && !use.DEMsmoothing && length(var.names)>1) {
@@ -324,24 +329,39 @@ krige.head <- function(
 
   # Add a NA buffer if observations are on the boundary AND smoothing or MrVBF are used.
   # This step was added because smoothing and MrVBF can have NAs at boundaries,
-  # resulting in points and grid cells at the boundary not being able to be estimated. 
+  # resulting in points and grid cells at the boundary not being able to be estimated.
+  extend.DEM = FALSE
+  names(grid)='DEM'
   if (use.MrVBF || use.MrRTF || use.DEMsmoothing) {
     x.colbuffer = 0;
     y.rowbuffer = 0;
+    kernal.maxdim = 7
     grid.asRaster = raster::raster(grid);
     if (any(!is.na(grid.asRaster[,1])) || any(!is.na(grid.asRaster[,ncol(grid.asRaster)]))) {
-      x.colbuffer = 5
+      x.colbuffer = kernal.maxdim
     }  
     if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[,nrow(grid.asRaster)]))) {
-      y.rowbuffer = 5
+      y.rowbuffer = kernal.maxdim
     }     
     if (x.colbuffer>0 || y.rowbuffer>0) {
       warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
+      extend.DEM = TRUE
+      DEM.extent.input = raster::extent(grid.asRaster)
       grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
+      
+      # Infill NA DEM values of grid by taking the local average. This was essential to ensure
+      # DEM values at fixed head points beyond the mappng area (eg coastal points
+      # with a fixed head of zero just beyond the DEM extent)
+      dem.asRaster = raster::raster(grid,layer='DEM');
+      for (i in 1:kernal.maxdim)
+        grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,kernal.maxdim,kernal.maxdim), fun=mean, na.rm=TRUE, NAonly=TRUE)
+      
       grid = as(grid.asRaster, class(grid))
+      names(grid)='DEM'
     }
     rm('grid.asRaster')
   }
+  
   
 
   # Find   mid-point of MRVBF & smoothing parameters. This only does anything if
@@ -1197,10 +1217,7 @@ krige.head <- function(
     }
 
     # Smooth heads using Gaussian kernal
-    if (is.na(smooth.std) || use.DEMsmoothing || smooth.std<=0) {
-      return(head)
-    } else {
-
+    if (!is.na(smooth.std) && !is.null(smooth.std) && !use.DEMsmoothing) {
       message('... Starting Gaussian smoothing of ', ncells,' grid cells')
       # Build Gaussian blur kernal
       cellDist = matrix(1,5,5);
@@ -1230,9 +1247,27 @@ krige.head <- function(
       }
 
       message('... Finished Gaussian smoothing of ', ncells,' grid cells')
-
-      return(head)
     }
+    
+    # Convert grids to raster
+    sp::gridded(grid) = TRUE
+    grid.asRaster = raster::raster(grid)
+    head.asRaster = raster::raster(head)
+    
+    # Crop head to the input extent, if fell buffer was added
+    if (extend.DEM) {
+      grid.asRaster = raster::crop(grid.asRaster, DEM.extent.input)  
+      head.asRaster = raster::crop(head.asRaster, DEM.extent.input)  
+    }
+    
+    # Calculate the depth to water table.
+    if (do.head.est) {
+      head.asRaster$DTWT = grid.asRaster$elev - head.asRaster$head
+    }
+
+    head = as(head.asRaster,'SpatialPixelsDataFrame')
+    
+    return(head)    
   }
 
   # Setup estimation points est at newdata locations
@@ -1248,7 +1283,7 @@ krige.head <- function(
   grid.LandType = NULL;
   grid.params = NULL;
   grid.elev=NULL;
-  if (!use.DEMsmoothing && !is.null(smooth.std)  && smooth.std>0) {
+  if (!use.DEMsmoothing && !is.na(smooth.std)  && smooth.std>0) {
     if (debug.level>0)
       message('... Building raster grids.')
     grid.elev = raster::raster(grid,layer='DEM')
@@ -1331,10 +1366,6 @@ krige.head <- function(
                                         omax.fixedHead=omax.fixedHead,
                                         maxdist=maxdist,
                                         omax=omax,
-                                        do.depth.est=do.depth.est,
-                                        use.MrVBF=use.MrVBF,
-                                        use.MrRTF=use.MrRTF,
-                                        use.DEMsmoothing=use.DEMsmoothing,
                                         use.LandCatagory=use.LandCatagory,
                                         use.FixedHeads=use.FixedHeads,
                                         data=data,
@@ -1370,10 +1401,6 @@ krige.head <- function(
                                omax.fixedHead=omax.fixedHead,
                                maxdist=maxdist,
                                omax=omax,
-                               do.depth.est=do.depth.est,
-                               use.MrVBF=use.MrVBF,
-                               use.MrRTF=use.MrRTF,
-                               use.DEMsmoothing=use.DEMsmoothing,
                                use.LandCatagory=use.LandCatagory,
                                use.FixedHeads=use.FixedHeads,
                                data=data,

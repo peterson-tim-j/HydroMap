@@ -7,7 +7,7 @@ Depends: R (>= 3.2.2)
 License: GPL3 or later.
 Encoding: UTF-8
 LazyData: true
-Imports: sp, gstat, raster, snow, parallel, rgenoud, RSAGA
+Imports: sp, gstat, raster, snow, parallel, rgenoud, RSAGA, stringr
 RoxygenNote: 7.2.3
 BugReports: https://github.com/peterson-tim-j/HydroMap/issues
 URL: https://github.com/peterson-tim-j/HydroMap

@@ -53,12 +53,14 @@ get.pointData <- function(formula = as.formula("head ~ elev + MrVBF + MrRTF"), d
     if (use.DEMsmoothing) {
     
       # Calc. smoothed DEM
-      grid = get.smoothedDEM(data, grid, smooth.std = smooth.std, smoothingKernal=smoothingKernal)
+      data = get.smoothedDEM(data, grid, smooth.std = smooth.std, smoothingKernal=smoothingKernal)
     
       # Calculate difference between DEM and smoothed DEM.
-      deltaDEMsmoothed = as(as.raster(grid$smoothing) - as.raster(grid$elev), 'SpatialPixelsDataFrame');
-      sp::gridded(deltaDEMsmoothed) = TRUE;
-      sp::fullgrid(deltaDEMsmoothed) = TRUE;
-      grid$smoothing = deltaDEMsmoothed[['layer']]	        
+      data$smoothing = data$smoothDEM - data$DEM;      
+      # 
+      # deltaDEMsmoothed = as(as.raster(grid$smoothing) - as.raster(grid$elev), 'SpatialPixelsDataFrame');
+      # sp::gridded(deltaDEMsmoothed) = TRUE;
+      # sp::fullgrid(deltaDEMsmoothed) = TRUE;
+      # grid$smoothing = deltaDEMsmoothed[['layer']]	        
     }
 }

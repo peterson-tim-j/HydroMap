@@ -16,15 +16,15 @@ krige.head(
   model = NULL,
   mrvbf.pslope = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
     match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
-     seq(0.5, 1.5,
-    length.out = 11)
+     seq(0.2, 2.5, by
+    = 0.1)
  } else {
      NULL
  },
   mrvbf.ppctl = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
     match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
-     seq(0.5, 1.5,
-    length.out = 11)
+     seq(0.2, 2.5, by
+    = 0.1)
  } else {
      NULL
  },
@@ -202,10 +202,10 @@ heads$DBNS = DEM$DEM - heads$head
 sp::gridded(heads)=T
 
 # Map depth to water table.
-spplot(heads,3, scales = list(draw = TRUE))
+sp::spplot(heads,3, scales = list(draw = TRUE))
 
 # Export grids to an ARCMAP *.asc file
-write.asciigrid(heads,'DBNS.asc',3,na.value = -999)
+sp::write.asciigrid(heads,'DBNS.asc',3,na.value = -999)
 
 }
 \references{

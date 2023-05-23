@@ -95,7 +95,7 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
           if (debug.level>0)
             message('... Writing DEM.asc');
 
-          write.asciigrid(grid,fname.dem, attr=1);
+          sp::write.asciigrid(grid,fname.dem, attr=1);
         }
 
         # Write DEM grid to .asc if not already done and then convert ASCII DEM to SAGA format.

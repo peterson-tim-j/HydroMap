@@ -46,10 +46,12 @@ get.smoothedDEM <- function(data, grid, smooth.std = 1.0, smoothingKernal=NULL, 
       	  message('... Building smoothing kernal.')
 
       	# Build Gaussian blur kernal
-      	smoothingKernal = matrix(1,5,5);
-      	for (i in 1:5) {
-      	  for(j in 1:5) {
-      	    smoothingKernal[i,j] = (i-3)^2 + (j-3)^2
+        kernal.ncells=7
+        kernal.ncells.centre = ceiling(kernal.ncells/2)
+      	smoothingKernal = matrix(1,kernal.ncells,kernal.ncells);
+      	for (i in 1:kernal.ncells) {
+      	  for(j in 1:kernal.ncells) {
+      	    smoothingKernal[i,j] = (i-kernal.ncells.centre)^2 + (j-kernal.ncells.centre)^2
       	  }
       	}
       }
@@ -61,16 +63,8 @@ get.smoothedDEM <- function(data, grid, smooth.std = 1.0, smoothingKernal=NULL, 
       sigmaWeights = 1/(2*pi*smooth.std[ind_smooth]^2) * exp(-smoothingKernal/(2*smooth.std[ind_smooth]^2) )
       sigmaWeights = sigmaWeights/sum(sigmaWeights);
 
-      # Infill NA DEM values of grid by taking the local average. This was essential to ensure
-      # DEM values at fixed head points beyond the mappng area (eg coastal points
-      # with a fixed head of zero just beyond the DEM extent)
-      dem.asRaster = raster::raster(grid,layer='DEM');
-      kernal.maxdim = max(dim(smoothingKernal));
-      for (i in 1:kernal.maxdim)
-        dem.asRaster = raster::focal(dem.asRaster, w=matrix(1,kernal.maxdim,kernal.maxdim), fun=mean, na.rm=TRUE, NAonly=TRUE)
-
       # Do smoothing of DEM
-      smoothDEM.asRaster = raster::focal(dem.asRaster, sigmaWeights);
+      smoothDEM.asRaster = raster::focal(raster::raster(grid), sigmaWeights);
 
       # Add smoothed DEM to grid
       smoothDEM.grid = as(smoothDEM.asRaster,'SpatialPixelsDataFrame')

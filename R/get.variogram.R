@@ -9,8 +9,13 @@ get.variogram <- function(formula, data, cutoff=120000, width=500, model=c('Mat'
   if (is.character(model)) {
     # get list of acceptable model 
     model.types = vgm();
+    
+    # Convert first letter of input names to upper case
+    model = stringr::str_to_title(model)
+    
+    # Check input variogram names are in the list of possible names 
     for (i in 1:length(model)) { 
-      if (!model[i] %in% model)
+      if (!(model[i] %in% model.types[,1]))
 	      stop(paste('The following model type is not an accepted by gstat vgm():',model[i]))
     }
   }
@@ -19,8 +24,8 @@ get.variogram <- function(formula, data, cutoff=120000, width=500, model=c('Mat'
   if (debug.level>0) 
     message('... Checking formula terms.');
   var.names <- all.vars(formula);
-  do.head.est <- any(match(var.names, 'head'),na.rm=TRUE);
-  do.depth.est <- any(match(var.names, 'depth'),na.rm=TRUE);	   
+  do.head.est <- 'head' %in% var.names;
+  do.depth.est <- 'depth' %in% var.names;	   
   if (do.depth.est == FALSE && do.head.est ==FALSE)
     stop('   Variogram formula LHS must be "depth" or "head".')
      

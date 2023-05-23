@@ -150,8 +150,8 @@ krige.head.calib <-
            data.fixedHead=NULL,
            data.errvar.colname = NULL,
            model = c('Mat'),
-           mrvbf.pslope = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.5, 1.5, length.out = 11)}else{NULL},
-           mrvbf.ppctl  = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.5, 1.5, length.out = 11)}else{NULL},
+           mrvbf.pslope = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.20, 2.5, by = 0.1)}else{NULL},
+           mrvbf.ppctl  = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.20, 2.5, by = 0.1)}else{NULL},
            smooth.std = seq(0.5, 1.5, length.out = 11),
            nmax = if(is.character(data)){-999}else{ceiling(seq(0.1,0.20,0.01)*length(data))},
            nmax.fixedHead = if(!is.null(data.fixedHead)) {seq(10,110,length=11)}else{NULL},
@@ -169,7 +169,7 @@ krige.head.calib <-
 
     # Check gstst is loaded
     if (!require('gstat',quietly = T))
-      stop('Please install the gstst package. It is required by HydroMap.')
+      stop('Please install the gstat package. It is required by HydroMap.')
     
     if (debug.level>0)
       message('Calibrating mapping parameters.')
@@ -197,23 +197,42 @@ krige.head.calib <-
     if (is.na(use.DEMsmoothing))
       use.DEMsmoothing = FALSE;
 
+    # Check RSAGA is loaded
+    if (use.MrVBF || use.MrRTF)
+      if (!require('RSAGA',quietly = T))
+        stop('Please install the RSAGA package. It is required by HydroMap.')
+    
+    # Reset the package environment.
+    clear.env()
+    
     # Add a NA buffer if observations are on the boundary AND smoothing or MrVBF are used.
     # This step was added because smoothing and MrVBF can have NAs at boundaries,
     # resulting in points and grid cells at the boundary not being able to be estimated. 
     if (use.MrVBF || use.MrRTF || use.DEMsmoothing) {
       x.colbuffer = 0;
       y.rowbuffer = 0;
+      kernal.maxdim = 7
       grid.asRaster = raster::raster(grid);
       if (any(!is.na(grid.asRaster[,1])) || any(!is.na(grid.asRaster[,ncol(grid.asRaster)]))) {
-        x.colbuffer = 5
+        x.colbuffer = kernal.maxdim
       }  
       if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[,nrow(grid.asRaster)]))) {
-        y.rowbuffer = 5
+        y.rowbuffer = kernal.maxdim
       }     
       if (x.colbuffer>0 || y.rowbuffer>0) {
         warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
         grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
+        
+        # Infill NA DEM values of grid by taking the local average. This was essential to ensure
+        # DEM values at fixed head points beyond the mappng area (eg coastal points
+        # with a fixed head of zero just beyond the DEM extent)
+        dem.asRaster = raster::raster(grid,layer='DEM');
+        for (i in 1:kernal.maxdim)
+          grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,kernal.maxdim,kernal.maxdim), fun=mean, na.rm=TRUE, NAonly=TRUE)
+        
+        grid.input = grid
         grid = as(grid.asRaster, class(grid))
+        names(grid)='DEM'
       }
       rm('grid.asRaster')
     }
@@ -541,30 +560,28 @@ krige.head.calib <-
     # for the calibration variogram estimation.
     if (use.MrVBF || use.MrRTF) {
       if (length(mrvbf.pslope)==2)
-        ind_pslope = min(mrvbf.pslope) + range(mrvbf.pslope)/2
+        mrvbf.pslope.tmp = min(mrvbf.pslope) + (max(mrvbf.pslope)-min(mrvbf.pslope))/2
       else {
         ind_pslope = max(1,round(length(mrvbf.pslope)/2))
+        mrvbf.pslope.tmp = mrvbf.pslope[ind_pslope];
       }
       if (length(mrvbf.ppctl)==2)
-        ind_ppctl = min(mrvbf.ppctl) + range(mrvbf.ppctl)/2
+        mrvbf.ppctl.tmp = min(mrvbf.ppctl) + range(mrvbf.ppctl)/2
       else {
         ind_ppctl = max(1,round(length(mrvbf.ppctl)/2))
+        mrvbf.ppctl.tmp = mrvbf.ppctl[ind_ppctl];
       }
-
-      mrvbf.pslope.tmp = mrvbf.pslope[ind_pslope];
-      mrvbf.ppctl.tmp = mrvbf.ppctl[ind_ppctl];
-
     } else {
       mrvbf.pslope.tmp = NULL;
       mrvbf.ppctl.tmp = NULL;
     }
     if (use.DEMsmoothing) {
       if (length(smooth.std)==2)
-        ind_smooth = min(smooth.std) + range(smooth.std)/2
+        smooth.std.tmp = min(smooth.std) + (max(smooth.std)-min(smooth.std))/2
       else {
         ind_smooth = max(1,round(length(smooth.std)/2))
+        smooth.std.tmp = smooth.std[ind_smooth];
       }
-      smooth.std.tmp = smooth.std[ind_smooth];
     } else {
       smooth.std.tmp = NULL;
     }
@@ -602,7 +619,7 @@ krige.head.calib <-
       # If the input variogram model is empty, then get an initial estimate.
       if (class(model)[1] != "variogramModel") {
         message('... No input variogram. Deriving OLS initial estimate.')
-        model = get.variogram(formula, data, model = model, max.Its = 0)
+        model = get.variogram(formula, data, model = model, max.Its = 10)
       }
 
       # Extract the model parameters.
@@ -631,7 +648,7 @@ krige.head.calib <-
 
           param.Names[nParams] = 'nug'
           param.bounds = rbind(param.bounds,
-                               c(0.5 * variogram.psill[i], 2 * variogram.psill[i]));
+                               c(0.1 * variogram.psill[i], 10 * variogram.psill[i]));
           #}
         } else {
           #if (nchar(grid.landtype.colname) == 0) {
@@ -640,7 +657,7 @@ krige.head.calib <-
           param.Names[nParams] = paste('psill_model_', i - 1, sep = '')
 
           param.bounds = rbind(param.bounds,
-                               c(0.5 * variogram.psill[i], 2 * variogram.psill[i]))
+                               c(0.1 * variogram.psill[i], 10 * variogram.psill[i]))
           #}
 
           nParams = nParams + 1
@@ -648,7 +665,7 @@ krige.head.calib <-
           param.Names[nParams] = paste('range_model_', i - 1, sep = '')
 
           param.bounds = rbind(param.bounds,
-                               c(0.5 * variogram.range[i], 2 * variogram.range[i]))
+                               c(0.1 * variogram.range[i], 10 * variogram.range[i]))
 
           if (variogram.ang1[i] != 0) {
             nParams = nParams + 1
@@ -672,7 +689,7 @@ krige.head.calib <-
             param.Names[nParams] = paste('kappa_model_', i - 1, sep = '')
 
             param.bounds = rbind(param.bounds,
-                                 c(0.5 * variogram.kappa[i], 2 * variogram.kappa[i]))
+                                 c(0.1 * variogram.kappa[i], 10 * variogram.kappa[i]))
           }
         }
       }
@@ -813,7 +830,7 @@ krige.head.calib <-
     # Add data and new data
     solution$inputs$data = data
     solution$inputs$newdata = newdata
-    solution$inputs$grid = grid
+    solution$inputs$grid = grid.input
     
     # Add remaining inputs 
     solution$inputs$grid.landtype.colname = grid.landtype.colname
@@ -868,8 +885,26 @@ krige.head.calib <-
     # Add the lookup table to the solution. This is required if the the objectiveget.objFunc() is to be directly called.
     solution$lookup.table = param.IntegerLookupTable;
     
+    # Get point data for derived covariates
+    solution$inputs$newdata <- get.allData(formula =solution$inputs$formula, 
+                              data = solution$inputs$newdata, 
+                              grid = grid, 
+                              mrvbf.pslope = solution$parameter.Values$mrvbf.pslope, 
+                              mrvbf.ppctl = solution$parameter.Values$mrvbf.ppctl,
+                              smooth.std = solution$parameter.Values$smooth.std,
+                              debug.level=debug.level )
+      
+    # Get prediction errors
+    xval.est = krige.head.crossval(solution)
+    xval.est = data.frame(xval.est)
+    sp::coordinates(xval.est) = ~Easting + Northing
+    solution$predictions = xval.est
+    
     # Add calibration settings
     solution$genoud.output = genoud.solution
+    
+    # Reset the package environment.
+    clear.env()
     
     return(solution)
 

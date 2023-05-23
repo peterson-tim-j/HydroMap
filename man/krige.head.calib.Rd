@@ -15,15 +15,15 @@ krige.head.calib(
   model = c("Mat"),
   mrvbf.pslope = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
     match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
-     seq(0.5, 1.5,
-    length.out = 11)
+     seq(0.2, 2.5, by
+    = 0.1)
  } else {
      NULL
  },
   mrvbf.ppctl = if (any(match(all.vars(as.formula(formula)), "MrVBF", nomatch = F) |
     match(all.vars(as.formula(formula)), "MrRTF", nomatch = F))) {
-     seq(0.5, 1.5,
-    length.out = 11)
+     seq(0.2, 2.5, by
+    = 0.1)
  } else {
      NULL
  },

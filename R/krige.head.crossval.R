@@ -1,9 +1,39 @@
-krige.head.crossval <- function(newdata=NULL,  formula=NULL, model=NULL,model.landtype=NULL, model.landtype.head=NULL,model.fixedHead=NULL,
+#'
+#' @export
+krige.head.crossval <- function(calibration.results = NULL,  
+                                newdata=NULL,  formula=NULL, model=NULL,model.landtype=NULL, model.landtype.head=NULL,model.fixedHead=NULL,
                                 model.fixedHead.head=NULL,nmin=NULL,nmax=NULL,nmax.fixedHead=NULL,nmin.fixedHead=NULL,
-                                omax.fixedHead=NULL,maxdist=NULL,omax=NULL,do.depth.est=T, use.MrVBF=F,use.MrRTF=F, use.DEMsmoothing=F,
+                                omax.fixedHead=NULL,maxdist=NULL,omax=NULL, 
                                 use.LandCatagory=F, use.FixedHeads=F,data=NULL,data.fixedHead=NULL,data.weights=NULL,
                                 smooth.std=NULL,grid.elev=NULL,grid.MrVBF=NULL,grid.MrRTF=NULL,grid.LandType=NULL,
                                 grid.params=NULL,debug.level=0) {
+  
+  # Use calibration results if provided. Else use individual input.
+  if (!is.null(calibration.results)) {
+    
+    formula = calibration.results$inputs$formula
+    if (is.null(grid))
+      grid = calibration.results$inputs$grid
+    grid.landtype.colname = calibration.results$inputs$grid.landtype.colname;
+    if (is.null(data))
+      data = calibration.results$inputs$data
+    data.fixedHead = calibration.results$inputs$data.fixedHead
+    if (is.null(newdata))
+      newdata = calibration.results$inputs$newdata
+    data.errvar.colname = calibration.results$inputsdata.errvar.colname
+    model= calibration.results$variogramModel
+    fit.variogram.type = 3; 
+    
+    mrvbf.pslope = calibration.results$parameter.Values$mrvbf.pslope
+    mrvbf.ppctl = calibration.results$parameter.Values$mrvbf.ppctl
+    smooth.std = calibration.results$parameter.Values$smooth.std
+    nmax = calibration.results$parameter.Values$nmax
+    nmax.fixedHead = calibration.results$parameter.Values$nmax.fixedHead
+    maxdist = calibration.results$parameter.Values$maxdist
+    nmin = calibration.results$parameter.Values$nmin 
+    omax = calibration.results$parameter.Values$omax
+  }
+  
   if (is.null(newdata) || length(newdata)==0)
     stop('Kriging of point requires the input of "newdata" as a Spatial Point data Frame with >0 points.')
 
@@ -34,23 +64,32 @@ krige.head.crossval <- function(newdata=NULL,  formula=NULL, model=NULL,model.la
     use.extraTerms.names = var.names[is.na(ind)]
   }
 
-
-  # Define matrix for adjacent cells to each obs point
-  if (!use.DEMsmoothing && !is.null(smooth.std) && smooth.std>0) {
-    cellDirs = matrix(1,5,5);
-    cellDirs[3,3] = 0;
-  }
-
+  # Check if kriging depth to water table, etc
+  use.MrVBF = 'MrVBF' %in% var.names;
+  use.MrRTF = 'MrRTF' %in% var.names;
+  use.elev ='elev' %in% var.names | 'head' %in% var.names;
+  use.DEMsmoothing = 'smoothing' %in% var.names;
+  do.head.est = 'head' %in% var.names;
+  do.depth.est = 'depth' %in% var.names;
+  
+  
   # Get coordinates of points to estimate
   easting  = sp::coordinates(newdata)[,1]
   northing = sp::coordinates(newdata)[,2]
 
-  # Replace surveyed elevaton at point with DEM.
-  newdata$elev = newdata$DEM;
+  # Replace surveyed elevaton at point with DEM - if no elevation data but there is DEM data.
+  if ('DEM' %in% names(newdata) && !('elev' %in% names(newdata)) )
+    newdata$elev = newdata$DEM;
 
   # If smoothing the predicted head, then extract grid data from grid cells adjacent to prodiction points.
-  if (!use.DEMsmoothing && !is.null(smooth.std)  && smooth.std>0) {
-
+  useGussianBlur=FALSE
+  if (!use.DEMsmoothing && !is.null(smooth.std) && !is.na(smooth.std) && smooth.std>0) {
+    useGussianBlur = TRUE
+    
+    # Define matrix for adjacent cells to each obs point
+    cellDirs = matrix(1,5,5);
+    cellDirs[3,3] = 0;
+    
     # Find grid cell number for obs point
     cellInd = raster::extract(grid.elev, data.frame(Easting=easting,Northing=northing), cellnumbers=TRUE)[,1]
 
@@ -215,7 +254,8 @@ krige.head.crossval <- function(newdata=NULL,  formula=NULL, model=NULL,model.la
 
 
   # Apply Gussian blur
-  if (!use.DEMsmoothing && !is.null(smooth.std) && smooth.std>0) {
+  if (useGussianBlur) {
+    useGussianBlur = TRUE
     j=0;
     head=c();
     head.obs=c();
@@ -267,14 +307,40 @@ krige.head.crossval <- function(newdata=NULL,  formula=NULL, model=NULL,model.la
     pointData_DEM = newdata$DEM[filt];
   }
 
-  est = matrix(nrow=length(easting),ncol=7)
+  est = matrix(nrow=length(easting),ncol=6)
+  colnames(est) = c('Easting','Northing','Obs','Est','Kriging.var','Error')
   est[,1] = easting
   est[,2] = northing
   est[,3] = head.obs
   est[,4] = head;			            # Head est.
   est[,5] = krige.var;			      # Kriging variance
   est[,6] = head.obs - head	;     # Residual
-  est[,7] = pointData_DEM;     # DEM elevation
+  ind=6
+  if (use.elev ) {
+    ind = ind + 1 
+    est = cbind(est,as.vector(newdata$elev))
+    colnames(est)[ind]='elev'
+  }    
+  if (use.MrVBF ) {
+    ind = ind + 1 
+    est = cbind(est,as.vector(newdata$MrVBF))
+    colnames(est)[ind]='MrVBF'
+  }
+  if (use.MrRTF ) {
+    ind = ind + 1 
+    est = cbind(est,as.vector(newdata$MrRTF))
+    colnames(est)[ind]='MrRTF'
+  }
+  if (use.DEMsmoothing ) {
+    ind = ind + 1 
+    est = cbind(est,as.vector(newdata$smoothing))
+    colnames(est)[ind]='smoothing'
+  }
+  if (use.LandCatagory ) {
+    ind = ind + 1 
+    est = cbind(est,as.vector(newdata$LandType))
+    colnames(est)[ind]='LandType'
+  }  
 
   return(est);
 }

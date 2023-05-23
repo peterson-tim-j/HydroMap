@@ -2,6 +2,10 @@
 #' @export
 set.env <- function(working.path=getwd(), saga.path='', saga.modules='', saga.lib.prefix='') {
 
+  # Check RSAGA is loaded
+  if (!require('RSAGA',quietly = T))
+    stop('Please install the RSAGA package. It is required by HydroMap.')
+  
   if (!exists('pkg.env'))
     pkg.env <<- new.env()
 
