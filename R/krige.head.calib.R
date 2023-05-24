@@ -830,7 +830,11 @@ krige.head.calib <-
     # Add data and new data
     solution$inputs$data = data
     solution$inputs$newdata = newdata
-    solution$inputs$grid = grid.input
+    if (exists('grid.input')) {
+      solution$inputs$grid = grid.input 
+    } else {
+      solution$inputs$grid = grid
+    }
     
     # Add remaining inputs 
     solution$inputs$grid.landtype.colname = grid.landtype.colname

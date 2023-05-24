@@ -97,8 +97,8 @@ f <- as.formula('head ~ elev')
 # Here the size of the population of random guesses equals four time the number of calibration 
 # parameters.
 calib.results.example1 <- krige.head.calib(formula=f, grid=DEM, data=trainingData, newdata=predictionData, 
-                  nmin=0, nmax=Inf, maxdist=Inf, omax=0, data.errvar.colname='total_err_var', model =         
-                  variogram.model,  fit.variogram.type=1,  smooth.std =NA,
+                  nmin=0, nmax=Inf, maxdist=Inf, omax=0, data.errvar.colname='total_err_var',
+                  model = variogram.model,  fit.variogram.type=1,  smooth.std =NA,
                   pop.size.multiplier=4, debug.level=0, use.cluster = 2)
 
 # Do the interpolation of the point data using the calibration results.  
@@ -184,6 +184,7 @@ head.grid.example3 <- krige.head(calibration.results = calib.results.example3, d
 
 # Map the head elevation and kriging uncertainty.
 png('Example3_head.png')
+par(mar = c(2, 2, 1, 1))
 raster::plot(raster::raster(head.grid.example3),'head')
 raster::contour(raster::raster(head.grid.example3,1), levels = seq(70,125,by=5), add=T)
 dev.off()
@@ -194,6 +195,7 @@ head.grid.example3$DTWT.cats =cut(head.grid.example3$DTWT,breaks=c(-Inf,0,2,5,10
 
 # Map the categorised depth to water table.
 png('Example3_DTWT.png')
+par(mar = c(1, 1, 1, 1))
 sp::spplot(head.grid.example3,'DTWT.cats', scales = list(draw = TRUE))
 dev.off()
 ```
