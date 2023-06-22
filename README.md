@@ -43,7 +43,8 @@ set.env(saga.path = 'C:/Program Files (x86)/saga-9.0.1_x64',saga.modules = 'C:/P
 # Load water table observations from  April 2000 for Victoria, Australia and a 250m state-wide DEM.
 data('victoria.groundwater')
 
-# Crop this stat-ewide DEM and data  points to a small in the centre north. 
+# Crop this state-wide DEM and data  points to a small in the centre north. 
+# If you have your own ESRI ASC DEM, then you can import it using: DEM = import.DEM('myFile.asc')
 DEM <- raster::crop(raster::raster(DEM), raster::extent(2400000, 2500000, 2550000, 2650000))
 DEM = as(DEM,'SpatialGridDataFrame')
 obs.data <- raster::crop(obs.data, DEM, inverse = F) 
@@ -99,7 +100,7 @@ f <- as.formula('head ~ elev')
 calib.results.example1 <- krige.head.calib(formula=f, grid=DEM, data=trainingData, newdata=predictionData, 
                   nmin=0, nmax=Inf, maxdist=Inf, omax=0, data.errvar.colname='total_err_var',
                   model = variogram.model,  fit.variogram.type=1,  smooth.std =NA,
-                  pop.size.multiplier=4, debug.level=0, use.cluster = 2)
+                  pop.size.multiplier=4, max.generations=100, debug.level=0, use.cluster = 2)
 
 # Do the interpolation of the point data using the calibration results.  
 # NOTE: All of the observed data is used for the calibration. All CPU cores are also used. 
@@ -138,7 +139,7 @@ f <- as.formula('head ~ elev + smoothing')
 calib.results.example2 <- krige.head.calib(formula=f, grid=DEM, data=trainingData, newdata=predictionData, 
                   nmin=0, nmax=Inf, maxdist=Inf, omax=0, data.errvar.colname='total_err_var', model =         
                   variogram.model,  fit.variogram.type=1, smooth.std = c(0.5, 5.0),
-                  pop.size.multiplier=4, debug.level=0, use.cluster = 2)
+                  pop.size.multiplier=4, max.generations =200, debug.level=0, use.cluster = 2)
 
 # Do the interpolation of the point data using the calibration results.  
 # NOTE: All of the observed data is used for the calibration. All CPU cores are also used. 
