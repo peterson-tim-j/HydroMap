@@ -1,4 +1,4 @@
-get.smoothedDEM <- function(data, grid, smooth.std = 1.0, smoothingKernal=NULL, maxStoredGrids=10, debug.level=0 ) {
+get.smoothedDEM <- function(data, grid, smooth.std = 1.0, smooth.ncells=smooth.ncells, smoothingKernal=NULL, maxStoredGrids=10, debug.level=0 ) {
 
   if (debug.level>0)
     message('Getting smoothed DEM elevation grid:');
@@ -46,11 +46,10 @@ get.smoothedDEM <- function(data, grid, smooth.std = 1.0, smoothingKernal=NULL, 
       	  message('... Building smoothing kernal.')
 
       	# Build Gaussian blur kernal
-        kernal.ncells=7
-        kernal.ncells.centre = ceiling(kernal.ncells/2)
-      	smoothingKernal = matrix(1,kernal.ncells,kernal.ncells);
-      	for (i in 1:kernal.ncells) {
-      	  for(j in 1:kernal.ncells) {
+        kernal.ncells.centre = ceiling(smooth.ncells/2)
+      	smoothingKernal = matrix(1,smooth.ncells,smooth.ncells);
+      	for (i in 1:smooth.ncells) {
+      	  for(j in 1:smooth.ncells) {
       	    smoothingKernal[i,j] = (i-kernal.ncells.centre)^2 + (j-kernal.ncells.centre)^2
       	  }
       	}

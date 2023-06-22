@@ -1,4 +1,4 @@
-get.pointData <- function(formula = as.formula("head ~ elev + MrVBF + MrRTF"), data, grid, mrvbf.pslope = 1.0, mrvbf.ppctl = 1.0, smooth.std = 1.0, smoothingKernal = NULL, debug.level=0 ) {
+get.pointData <- function(formula = as.formula("head ~ elev + MrVBF + MrRTF"), data, grid, mrvbf.pslope = 1.0, mrvbf.ppctl = 1.0, smooth.std = 1.0, smooth.ncells=11, smoothingKernal = NULL, debug.level=0 ) {
 
     # Check enviro variables are setup
     if (!exists('pkg.env') || is.null(pkg.env))
@@ -53,7 +53,7 @@ get.pointData <- function(formula = as.formula("head ~ elev + MrVBF + MrRTF"), d
     if (use.DEMsmoothing) {
     
       # Calc. smoothed DEM
-      data = get.smoothedDEM(data, grid, smooth.std = smooth.std, smoothingKernal=smoothingKernal)
+      data = get.smoothedDEM(data, grid, smooth.std = smooth.std, smooth.ncells=smooth.ncells, smoothingKernal=smoothingKernal)
     
       # Calculate difference between DEM and smoothed DEM.
       data$smoothing = data$smoothDEM - data$DEM;      

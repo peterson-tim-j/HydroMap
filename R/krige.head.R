@@ -67,8 +67,10 @@
 #'
 #' @param  \code{smooth.std} defines the strength of the Gaussian kernal smoothing applied to the 5x5 grid cells surrounding each DEM grid cell. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 #' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
-#' not be optimised.  The default is \code{seq(0.5, 1.5, length.out = 11)}.
+#' not be optimised.  The default is \code{seq(0.5, 2.5, length.out = 11)}.
 #'
+#' @param \code{smooth.ncells} defines the number of grid cells used (in each dimension) for Gaussian kernel smoothing. This input is current not able to be calibrated. Default is \code{11}.
+#' 
 #' @param \code{nmax} defines the maximum number of \code{data} observations to use when estimate each point using local kriging. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 #' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 #' not be optimised.  The default is \code{ceiling(seq(0.1,0.20,0.01)*length(data))}.
@@ -166,7 +168,8 @@ krige.head <- function(
   model=NULL,
   mrvbf.pslope = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.2, 2.5, by = 0.1)}else{NULL},
   mrvbf.ppctl  = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.2, 2.5, by = 0.1)}else{NULL},
-  smooth.std = seq(0.5,1.5,length.out=11),
+  smooth.std = seq(0.5,2.5,length.out=11),
+  smooth.ncells = 11,
   nmax = if(is.character(data)){-999}else{ceiling(seq(0.1,0.20,0.01)*length(data))},
   nmax.fixedHead = if(!is.null(data.fixedHead)) {seq(10,110,length=11)}else{NULL},
   maxdist = if(class(grid)=='SpatialPixelsDataFrame' || class(grid)=='SpatialGridDataFrame'){ceiling(0.5*sqrt((extent(grid)[2]-extent(grid)[1])^2 + (extent(grid)[4]-extent(grid)[3])^2)*seq(0.1,1,0.1))}else{-999},
@@ -333,15 +336,17 @@ krige.head <- function(
   extend.DEM = FALSE
   names(grid)='DEM'
   if (use.MrVBF || use.MrRTF || use.DEMsmoothing) {
+    if (smooth.ncells<1 || (as.integer(smooth.ncells) - smooth.ncells)>0)
+      stop('The input smooth.ncells must be >0 and an integer.')
+    
     x.colbuffer = 0;
     y.rowbuffer = 0;
-    kernal.maxdim = 7
     grid.asRaster = raster::raster(grid);
     if (any(!is.na(grid.asRaster[,1])) || any(!is.na(grid.asRaster[,ncol(grid.asRaster)]))) {
-      x.colbuffer = kernal.maxdim
+      x.colbuffer = smooth.ncells
     }  
-    if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[,nrow(grid.asRaster)]))) {
-      y.rowbuffer = kernal.maxdim
+    if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[nrow(grid.asRaster),]))) {
+      y.rowbuffer = smooth.ncells
     }     
     if (x.colbuffer>0 || y.rowbuffer>0) {
       warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
@@ -353,8 +358,8 @@ krige.head <- function(
       # DEM values at fixed head points beyond the mappng area (eg coastal points
       # with a fixed head of zero just beyond the DEM extent)
       dem.asRaster = raster::raster(grid,layer='DEM');
-      for (i in 1:kernal.maxdim)
-        grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,kernal.maxdim,kernal.maxdim), fun=mean, na.rm=TRUE, NAonly=TRUE)
+      for (i in 1:smooth.ncells)
+        grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,smooth.ncells,smooth.ncells), fun=mean, na.rm=TRUE, NAonly=TRUE)
       
       grid = as(grid.asRaster, class(grid))
       names(grid)='DEM'
@@ -456,7 +461,7 @@ krige.head <- function(
   # get grid data and remove grid columns not required.
   if (debug.level>0)
     message(' ... Getting grid data');
-  grid = get.allData(formula = formula, NULL, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, debug.level=debug.level)
+  grid = get.allData(formula = formula, NULL, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
   grid$smoothDEM = NULL;
 
   # Convert DEM to Raster object
@@ -534,7 +539,7 @@ krige.head <- function(
     } else {
       data.all = rbind(data, newdata, data.fixedHead)
     }
-    data.all = get.allData(formula = formula, data.all, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, debug.level=debug.level)
+    data.all = get.allData(formula = formula, data.all, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
 
     # Disaggregate data
     data = data.all[seq(1,nrow(data)),]
@@ -564,7 +569,7 @@ krige.head <- function(
     }else {
       data.all = rbind(data, newdata)
     }
-    data.all = get.allData(formula = formula, data.all, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, debug.level=debug.level)
+    data.all = get.allData(formula = formula, data.all, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
 
     # Disaggregate data
     if (do.grid.est) {

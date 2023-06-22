@@ -28,7 +28,8 @@ krige.head(
  } else {
      NULL
  },
-  smooth.std = seq(0.5, 1.5, length.out = 11),
+  smooth.std = seq(0.5, 2.5, length.out = 11),
+  smooth.ncells = 11,
   nmax = if (is.character(data)) {
      -999
  } else {
@@ -103,7 +104,9 @@ not be optimised.  If the \code{formula} includes either of the terms \code{MrVB
 
 \item{\code{smooth.std}}{defines the strength of the Gaussian kernal smoothing applied to the 5x5 grid cells surrounding each DEM grid cell. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
-not be optimised.  The default is \code{seq(0.5, 1.5, length.out = 11)}.}
+not be optimised.  The default is \code{seq(0.5, 2.5, length.out = 11)}.}
+
+\item{\code{smooth.ncells}}{defines the number of grid cells used (in each dimension) for Gaussian kernel smoothing. This input is current not able to be calibrated. Default is \code{11}.}
 
 \item{\code{nmax}}{defines the maximum number of \code{data} observations to use when estimate each point using local kriging. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will

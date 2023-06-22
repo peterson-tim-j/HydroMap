@@ -54,9 +54,10 @@
 #' @param  \code{mrvbf.ppctl} defines the calibration type and range for the MrVFB shape parameter for elevation percentile (see Gallant et al. 2003). It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 #' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 #' not be optimised.  If the \code{formula} includes either of the terms \code{MrVBF} or \code{MrRTF}, then the default is \code{seq(0.5, 1.5, length.out = 11)}. Else, the default is \code{NULL}.
-#' @param  \code{smooth.std} defines the calibration type and range for the strength of the Gaussian kernal smoothing applied to the 5x5 grid cells surrounding each DEM grid cell. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
+#' @param  \code{smooth.std} defines the calibration type and range for the strength of the Gaussian kernel smoothing applied to the 5x5 grid cells surrounding each DEM grid cell. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 #' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
-#' not be optimised.  The default is \code{seq(0.5, 1.5, length.out = 11)}.
+#' not be optimised.  The default is \code{seq(0.5, 2.5, length.out = 11)}.
+#' @param \code{smooth.ncells} defines the number of grid cells used (in each dimension) for Gaussian kernel smoothing. This input is current not able to be calibrated. Default is \code{11}.
 #' @param \code{nmax} defines the calibration type and range for the maximum number of \code{data} observations to use when estimate each point using local kriging. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 #' treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 #' not be optimised.  The default is \code{ceiling(seq(0.1,0.20,0.01)*length(data))}.
@@ -86,7 +87,10 @@
 #' by first estimating the difference between the land surface elevation and the head. At those \code{newdata} points above the land surface, the absolute of this difference is added to the absolute error between
 #' the predicated value and that within \code{newdata}. For \code{objFunc.type==3}, the root-mean-square error is used. For \code{objFunc.type==4}, the root-mean-square error is used but with the penalty from type 2.
 #' The default is \code{objFunc.type=1}.
-#'
+#' @param \code{pop.size.multiplier} defines the size of the calibration population, expressed as a multiplier for the number of parameters. Default =3.
+#' @param \code{max.generations} defines the maximum number of calibration evolution loops. Default = 200. 
+#' @param \code{hard.generation.limit} defines if \code{max.generations} is a hard or soft limit (default). Default is \code{FALSE}.
+#' @param \code{solution.tolerance} defines the calibration tolerance for convergence. Default is \code{1e-4}.
 #' @param \code{use.cluster} see \code{\link{krige.head}}.
 #'
 #' @param \code{debug.level} see \code{\link{krige.head}}.
@@ -152,7 +156,8 @@ krige.head.calib <-
            model = c('Mat'),
            mrvbf.pslope = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.20, 2.5, by = 0.1)}else{NULL},
            mrvbf.ppctl  = if(any(match(all.vars(as.formula(formula)), 'MrVBF',nomatch=F) | match(all.vars(as.formula(formula)), 'MrRTF',nomatch=F))){seq(0.20, 2.5, by = 0.1)}else{NULL},
-           smooth.std = seq(0.5, 1.5, length.out = 11),
+           smooth.std = seq(0.5, 2.5, length.out = 11),
+           smooth.ncells = 11,
            nmax = if(is.character(data)){-999}else{ceiling(seq(0.1,0.20,0.01)*length(data))},
            nmax.fixedHead = if(!is.null(data.fixedHead)) {seq(10,110,length=11)}else{NULL},
            maxdist = if(class(grid)=='SpatialPixelsDataFrame' || class(grid)=='SpatialGridDataFrame'){ceiling(0.5*sqrt((extent(grid)[2]-extent(grid)[1])^2 + (extent(grid)[4]-extent(grid)[3])^2)*seq(0.1,1,0.1))}else{-999},
@@ -209,26 +214,28 @@ krige.head.calib <-
     # This step was added because smoothing and MrVBF can have NAs at boundaries,
     # resulting in points and grid cells at the boundary not being able to be estimated. 
     if (use.MrVBF || use.MrRTF || use.DEMsmoothing) {
+      if (smooth.ncells<1 || (as.integer(smooth.ncells) - smooth.ncells)>0)
+        stop('The input smooth.ncells must be >0 and an integer.')
+      
       x.colbuffer = 0;
       y.rowbuffer = 0;
-      kernal.maxdim = 7
       grid.asRaster = raster::raster(grid);
       if (any(!is.na(grid.asRaster[,1])) || any(!is.na(grid.asRaster[,ncol(grid.asRaster)]))) {
-        x.colbuffer = kernal.maxdim
+        x.colbuffer = smooth.ncells
       }  
-      if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[,nrow(grid.asRaster)]))) {
-        y.rowbuffer = kernal.maxdim
+      if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[nrow(grid.asRaster),]))) {
+        y.rowbuffer = smooth.ncells
       }     
       if (x.colbuffer>0 || y.rowbuffer>0) {
-        warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
+        warning('Buffer added around the input-grid. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
         grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
         
         # Infill NA DEM values of grid by taking the local average. This was essential to ensure
         # DEM values at fixed head points beyond the mappng area (eg coastal points
         # with a fixed head of zero just beyond the DEM extent)
         dem.asRaster = raster::raster(grid,layer='DEM');
-        for (i in 1:kernal.maxdim)
-          grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,kernal.maxdim,kernal.maxdim), fun=mean, na.rm=TRUE, NAonly=TRUE)
+        for (i in 1:smooth.ncells)
+          grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,smooth.ncells,smooth.ncells), fun=mean, na.rm=TRUE, NAonly=TRUE)
         
         grid.input = grid
         grid = as(grid.asRaster, class(grid))

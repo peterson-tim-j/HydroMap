@@ -1,6 +1,6 @@
 {
     "dialog-state": {
-        "query": ".asciigrid",
+        "query": "get.smoothedDEM(",
         "path": "",
         "regex": false,
         "caseSensitive": false,
@@ -11,7 +11,7 @@
         "useGitGrep": false,
         "excludeGitIgnore": true,
         "excludeFilePatterns": [],
-        "resultsCount": 7,
+        "resultsCount": 3,
         "errorCount": 0,
         "replaceErrors": "",
         "projectRelative": true

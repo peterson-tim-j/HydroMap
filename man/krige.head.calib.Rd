@@ -27,7 +27,8 @@ krige.head.calib(
  } else {
      NULL
  },
-  smooth.std = seq(0.5, 1.5, length.out = 11),
+  smooth.std = seq(0.5, 2.5, length.out = 11),
+  smooth.ncells = 11,
   nmax = if (is.character(data)) {
      -999
  } else {
@@ -96,9 +97,11 @@ not be optimised. If the \code{formula} includes either of the terms \code{MrVBF
 treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
 not be optimised.  If the \code{formula} includes either of the terms \code{MrVBF} or \code{MrRTF}, then the default is \code{seq(0.5, 1.5, length.out = 11)}. Else, the default is \code{NULL}.}
 
-\item{\code{smooth.std}}{defines the calibration type and range for the strength of the Gaussian kernal smoothing applied to the 5x5 grid cells surrounding each DEM grid cell. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
+\item{\code{smooth.std}}{defines the calibration type and range for the strength of the Gaussian kernel smoothing applied to the 5x5 grid cells surrounding each DEM grid cell. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
-not be optimised.  The default is \code{seq(0.5, 1.5, length.out = 11)}.}
+not be optimised.  The default is \code{seq(0.5, 2.5, length.out = 11)}.}
+
+\item{\code{smooth.ncells}}{defines the number of grid cells used (in each dimension) for Gaussian kernel smoothing. This input is current not able to be calibrated. Default is \code{11}.}
 
 \item{\code{nmax}}{defines the calibration type and range for the maximum number of \code{data} observations to use when estimate each point using local kriging. It can be a scalar number, a vector of two values defining the optimisation range when the parameter is
 treated as a real number or a vector of length >2 values defining the optimisation increments when the parameter is treated as not continuous but discrete. If a single number is input, then the parameter will
@@ -134,6 +137,14 @@ For details see Samper and Neumen (1989A,B) and Pardo-Iguzquiza & Dowd (2013). F
 by first estimating the difference between the land surface elevation and the head. At those \code{newdata} points above the land surface, the absolute of this difference is added to the absolute error between
 the predicated value and that within \code{newdata}. For \code{objFunc.type==3}, the root-mean-square error is used. For \code{objFunc.type==4}, the root-mean-square error is used but with the penalty from type 2.
 The default is \code{objFunc.type=1}.}
+
+\item{\code{pop.size.multiplier}}{defines the size of the calibration population, expressed as a multiplier for the number of parameters. Default =3.}
+
+\item{\code{max.generations}}{defines the maximum number of calibration evolution loops. Default = 200.}
+
+\item{\code{hard.generation.limit}}{defines if \code{max.generations} is a hard or soft limit (default). Default is \code{FALSE}.}
+
+\item{\code{solution.tolerance}}{defines the calibration tolerance for convergence. Default is \code{1e-4}.}
 
 \item{\code{use.cluster}}{see \code{\link{krige.head}}.}
 
