@@ -41,6 +41,9 @@ library(RSAGA)
 set.env(saga.path = 'C:/Program Files (x86)/saga-9.0.1_x64',saga.modules = 'C:/Program Files (x86)/saga-9.0.1_x64/tools')
 
 # Load water table observations from  April 2000 for Victoria, Australia and a 250m state-wide DEM.
+# Note, to import your own point data (as a CSV file) use the command: obs.data <- import.pointData('myPointData.csv')
+# Using this import function will ensure that no single location has >1 observations. For details of this import function 
+# use: ?import.pointData
 data('victoria.groundwater')
 
 # Crop this state-wide DEM and data  points to a small in the centre north. 
