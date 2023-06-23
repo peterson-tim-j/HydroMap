@@ -223,7 +223,7 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
   	grid.DEM.params$cellsize[2] != grid.MrVBF.params$cellsize[2] ||
   	grid.DEM.params$cells.dim[1] != grid.MrVBF.params$cells.dim[1] ||
   	grid.DEM.params$cells.dim[2] != grid.MrVBF.params$cells.dim[2])
-  	  stop('    MrVBF pre-calculated grid(s) are of a different resolution and or extent to the input DEM. Reset using set.env().')
+  	  stop('    MrVBF pre-calculated grid(s) are of a different resolution and or extent to the input DEM. Reset using clear.env().')
   }
 
       # Check if MrVBF grid is of equal res and extent to DEM

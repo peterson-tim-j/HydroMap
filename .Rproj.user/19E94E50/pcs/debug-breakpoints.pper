@@ -1,5 +1,21 @@
 {
     "debugBreakpointsState": {
-        "breakpoints": []
+        "breakpoints": [
+            {
+                "id": 0,
+                "path": "C:/Users/tpet0008/Documents/HydroMap/R/get.MrVBF.R",
+                "line_number": 34,
+                "function_steps": "",
+                "function_name": "get.MrVBF",
+                "state": 2,
+                "editor_state": 2,
+                "editor_line_number": 34,
+                "is_pending_debug_completion": false,
+                "needs_updated_steps": false,
+                "type": 0,
+                "is_package_breakpoint": true,
+                "package_name": "HydroMap"
+            }
+        ]
     }
 }
