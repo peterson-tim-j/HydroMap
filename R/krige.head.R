@@ -1257,7 +1257,9 @@ krige.head <- function(
     # Convert grids to raster
     sp::gridded(grid) = TRUE
     grid.asRaster = raster::raster(grid)
-    head.asRaster = raster::raster(head)
+    head.asRaster = raster::raster(head,layer=1)
+    var.asRaster = raster::raster(head,layer=2)
+    head.asRaster$head.var = var.asRaster$head.var
     
     # Crop head to the input extent, if fell buffer was added
     if (extend.DEM) {
