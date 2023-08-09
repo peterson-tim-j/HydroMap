@@ -230,7 +230,7 @@ krige.head <- function(
     data.fixedHead = calibration.results$inputs$data.fixedHead
     if (is.null(newdata))
       newdata = calibration.results$inputs$newdata
-    data.errvar.colname = calibration.results$inputsdata.errvar.colname
+    data.errvar.colname = calibration.results$inputs$data.errvar.colname
     model= calibration.results$variogramModel
     fit.variogram.type = 3; 
     
