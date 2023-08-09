@@ -1,4 +1,4 @@
-get.smoothedDEM <- function(data, grid, smooth.std = 1.0, smooth.ncells=smooth.ncells, smoothingKernal=NULL, maxStoredGrids=10, debug.level=0 ) {
+get.smoothedDEM <- function(data, grid, grid_buffer=NULL, smooth.std = 1.0, smooth.ncells=smooth.ncells, smoothingKernal=NULL, maxStoredGrids=10, debug.level=0 ) {
 
   if (debug.level>0)
     message('Getting smoothed DEM elevation grid:');
@@ -63,7 +63,12 @@ get.smoothedDEM <- function(data, grid, smooth.std = 1.0, smooth.ncells=smooth.n
       sigmaWeights = sigmaWeights/sum(sigmaWeights);
 
       # Do smoothing of DEM
-      smoothDEM.asRaster = raster::focal(raster::raster(grid), sigmaWeights);
+      if (is.null(grid_buffer)) {
+        smoothDEM.asRaster = raster::focal(raster::raster(grid), sigmaWeights); 
+      } else {
+        smoothDEM.asRaster = raster::focal(raster::raster(grid_buffer), sigmaWeights); 
+        smoothDEM.asRaster = raster::crop(smoothDEM.asRaster, raster::extent(grid))
+      }
 
       # Add smoothed DEM to grid
       smoothDEM.grid = as(smoothDEM.asRaster,'SpatialPixelsDataFrame')

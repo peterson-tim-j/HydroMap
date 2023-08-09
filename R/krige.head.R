@@ -335,6 +335,7 @@ krige.head <- function(
   # resulting in points and grid cells at the boundary not being able to be estimated.
   extend.DEM = FALSE
   names(grid)='DEM'
+  grid_buffer=NULL
   if (use.MrVBF || use.MrRTF || use.DEMsmoothing) {
     if (smooth.ncells<1 || (as.integer(smooth.ncells) - smooth.ncells)>0)
       stop('The input smooth.ncells must be >0 and an integer.')
@@ -349,11 +350,12 @@ krige.head <- function(
       y.rowbuffer = smooth.ncells
     }     
     if (x.colbuffer>0 || y.rowbuffer>0) {
-      warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
+      if (do.grid.est)
+        warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
       extend.DEM = TRUE
       DEM.extent.input = raster::extent(grid.asRaster)
       grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
-      
+
       # Infill NA DEM values of grid by taking the local average. This was essential to ensure
       # DEM values at fixed head points beyond the mappng area (eg coastal points
       # with a fixed head of zero just beyond the DEM extent)
@@ -361,14 +363,11 @@ krige.head <- function(
       for (i in 1:smooth.ncells)
         grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,smooth.ncells,smooth.ncells), fun=mean, na.rm=TRUE, NAonly=TRUE)
       
-      grid = as(grid.asRaster, class(grid))
-      names(grid)='DEM'
+      grid_buffer= as(grid.asRaster, class(grid))
     }
     rm('grid.asRaster')
   }
   
-  
-
   # Find   mid-point of MRVBF & smoothing parameters. This only does anything if
   # the parameters are vectors. It is required to that some initial data is available
   # for the calibration variogram estimation.
@@ -461,7 +460,7 @@ krige.head <- function(
   # get grid data and remove grid columns not required.
   if (debug.level>0)
     message(' ... Getting grid data');
-  grid = get.allData(formula = formula, NULL, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
+  grid = get.allData(formula = formula, NULL, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
   grid$smoothDEM = NULL;
 
   # Convert DEM to Raster object
@@ -539,7 +538,7 @@ krige.head <- function(
     } else {
       data.all = rbind(data, newdata, data.fixedHead)
     }
-    data.all = get.allData(formula = formula, data.all, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
+    data.all = get.allData(formula = formula, data.all, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
 
     # Disaggregate data
     data = data.all[seq(1,nrow(data)),]
@@ -569,7 +568,7 @@ krige.head <- function(
     }else {
       data.all = rbind(data, newdata)
     }
-    data.all = get.allData(formula = formula, data.all, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
+    data.all = get.allData(formula = formula, data.all, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
 
     # Disaggregate data
     if (do.grid.est) {
@@ -1260,12 +1259,6 @@ krige.head <- function(
     head.asRaster = raster::raster(head,layer=1)
     var.asRaster = raster::raster(head,layer=2)
     head.asRaster$head.var = var.asRaster$head.var
-    
-    # Crop head to the input extent, if fell buffer was added
-    if (extend.DEM) {
-      grid.asRaster = raster::crop(grid.asRaster, DEM.extent.input)  
-      head.asRaster = raster::crop(head.asRaster, DEM.extent.input)  
-    }
     
     # Calculate the depth to water table.
     if (do.head.est) {

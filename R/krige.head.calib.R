@@ -213,6 +213,7 @@ krige.head.calib <-
     # Add a NA buffer if observations are on the boundary AND smoothing or MrVBF are used.
     # This step was added because smoothing and MrVBF can have NAs at boundaries,
     # resulting in points and grid cells at the boundary not being able to be estimated. 
+    grid_buffer=NULL
     if (use.MrVBF || use.MrRTF || use.DEMsmoothing) {
       if (smooth.ncells<1 || (as.integer(smooth.ncells) - smooth.ncells)>0)
         stop('The input smooth.ncells must be >0 and an integer.')
@@ -228,18 +229,16 @@ krige.head.calib <-
       }     
       if (x.colbuffer>0 || y.rowbuffer>0) {
         warning('Buffer added around the input-grid. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
+        grid.input = grid
         grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
         
         # Infill NA DEM values of grid by taking the local average. This was essential to ensure
         # DEM values at fixed head points beyond the mappng area (eg coastal points
         # with a fixed head of zero just beyond the DEM extent)
-        dem.asRaster = raster::raster(grid,layer='DEM');
         for (i in 1:smooth.ncells)
           grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,smooth.ncells,smooth.ncells), fun=mean, na.rm=TRUE, NAonly=TRUE)
         
-        grid.input = grid
-        grid = as(grid.asRaster, class(grid))
-        names(grid)='DEM'
+        grid_buffer = as(grid.asRaster, class(grid))
       }
       rm('grid.asRaster')
     }
@@ -602,7 +601,7 @@ krige.head.calib <-
       if (debug.level>0)
         message(' ... Getting point data');
 
-      data = get.allData(formula = formula, data, grid, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp)
+      data = get.allData(formula = formula, data, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp)
 
     }
     #-------------------
