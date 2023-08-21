@@ -1,4 +1,4 @@
-get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=TRUE, return.MrRTF=TRUE, maxStoredGrids=10, debug.level=0) {
+get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=TRUE, return.MrRTF=TRUE, maxStoredGrids=5, debug.level=0) {
 
   if (debug.level>0)
     message('Getting MrVBF data:');
@@ -272,7 +272,8 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
       data$tmpName =  tmp;
       ncols = length(names(data))
       names(data)[ncols] = 'MrVBF'
-
+      rm('MrVBF.asRaster')
+      
   	  # Append interpolated points to enviro variable
   	  if (is.null(pkg.env$MrVBF.data) || length(data) != length(pkg.env$MrVBF.data)) {
   	    Easting = sp::coordinates(data)[1];
@@ -303,6 +304,7 @@ get.MrVBF <- function(data = NULL, grid, pslope=NULL, ppctl=NULL, return.MrVBF=T
       data$tmpName =  tmp;
       ncols = length(names(data))
       names(data)[ncols] = 'MrRTF'
+      rm('MrRTF.asRaster')
 
   	  # Append interpolated points to enviro variable
   	  if (is.null(pkg.env$MrRTF.data) || length(data) != length(pkg.env$MrRTF.data)) {
