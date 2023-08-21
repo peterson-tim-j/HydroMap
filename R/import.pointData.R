@@ -55,7 +55,7 @@ import.pointData <- function(data, min.sepDist = 5, orderby.head = TRUE, debug.l
 	  }
 	  sp::coordinates(data) = ~easting + northing
 	  ndata = length(data);
-	  data = remove.duplicates(data, zero = min.sepDist)
+	  data = sp::remove.duplicates(data, zero = min.sepDist)
 
 	  if (debug.level>0)
 	    message(paste('... Number duplicate location points removed:',ndata-length(data)))
