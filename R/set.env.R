@@ -22,6 +22,7 @@ set.env <- function(working.path=getwd(), saga.path=NULL, saga.modules=NULL, sag
   pkg.env$saga.settings<<- NULL
   pkg.env$saga.has.MrVFB <<- FALSE
   pkg.env$ind.subset  <<- NULL
+  pkg.env$grid.buffer <<- NULL
 
   # Set working folder
   pkg.env$working.path <<- working.path;

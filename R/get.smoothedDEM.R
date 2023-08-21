@@ -1,4 +1,4 @@
-get.smoothedDEM <- function(data, grid, grid_buffer=NULL, smooth.std = 1.0, smooth.ncells=smooth.ncells, smoothingKernal=NULL, maxStoredGrids=10, debug.level=0 ) {
+get.smoothedDEM <- function(data, grid, grid_buffer=NULL, smooth.std = 1.0, smooth.ncells=smooth.ncells, smoothingKernal=NULL, maxStoredGrids=5, use.cluster=TRUE, debug.level=0 ) {
 
   if (debug.level>0)
     message('Getting smoothed DEM elevation grid:');
@@ -62,14 +62,31 @@ get.smoothedDEM <- function(data, grid, grid_buffer=NULL, smooth.std = 1.0, smoo
       sigmaWeights = 1/(2*pi*smooth.std[ind_smooth]^2) * exp(-smoothingKernal/(2*smooth.std[ind_smooth]^2) )
       sigmaWeights = sigmaWeights/sum(sigmaWeights);
 
+      #Setup cores
+      ncores = 1;
+      if (is.list(use.cluster)) {
+        ncores = length(use.cluster)
+      } else if (use.cluster!=F) {
+        if (is.numeric(use.cluster) && floor(use.cluster)>0){
+          ncores = use.cluster
+        } else {
+          ncores = min(parallel::detectCores(all.tests = TRUE, logical = FALSE),floor(use.cluster))
+        }
+        raster::beginCluster(n=ncores)
+      }
+      
       # Do smoothing of DEM
       if (is.null(grid_buffer)) {
-        smoothDEM.asRaster = raster::focal(raster::raster(grid), sigmaWeights); 
+          smoothDEM.asRaster = raster::focal(raster::raster(grid), sigmaWeights); 
       } else {
         smoothDEM.asRaster = raster::focal(raster::raster(grid_buffer), sigmaWeights); 
         smoothDEM.asRaster = raster::crop(smoothDEM.asRaster, raster::extent(grid))
       }
-
+      
+      # Close cluster
+      if (ncores>1) 
+        raster::endCluster()
+      
       # Add smoothed DEM to grid
       smoothDEM.grid = as(smoothDEM.asRaster,'SpatialPixelsDataFrame')
       sp::gridded(smoothDEM.grid) = TRUE;
@@ -120,6 +137,7 @@ get.smoothedDEM <- function(data, grid, grid_buffer=NULL, smooth.std = 1.0, smoo
     data$tmpName =  tmp;
     ncols = length(names(data))
     names(data)[ncols] = 'smoothDEM'
+    rm('grd.asRaster')
 
     # Append interpolated points to enviro variable
     if (is.null(pkg.env$smoothDEM.data) || length(data) != length(pkg.env$smoothDEM.data)) {

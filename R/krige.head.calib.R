@@ -239,6 +239,7 @@ krige.head.calib <-
           grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,smooth.ncells,smooth.ncells), fun=mean, na.rm=TRUE, NAonly=TRUE)
         
         grid_buffer = as(grid.asRaster, class(grid))
+        pkg.env$grid.buffer = grid_buffer
       }
       rm('grid.asRaster')
     }
@@ -601,7 +602,8 @@ krige.head.calib <-
       if (debug.level>0)
         message(' ... Getting point data');
 
-      data = get.allData(formula = formula, data, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp)
+      data = get.allData(formula = formula, data, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, 
+                         smooth.std = smooth.std.tmp, use.cluster=use.cluster, debug.level=debug.level)
 
     }
     #-------------------
@@ -902,7 +904,7 @@ krige.head.calib <-
                               mrvbf.pslope = solution$parameter.Values$mrvbf.pslope, 
                               mrvbf.ppctl = solution$parameter.Values$mrvbf.ppctl,
                               smooth.std = solution$parameter.Values$smooth.std,
-                              debug.level=debug.level )
+                              use.cluster=use.cluster, debug.level=debug.level)
       
     # Get prediction errors
     xval.est = krige.head.crossval(solution)

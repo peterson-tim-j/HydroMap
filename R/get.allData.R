@@ -1,4 +1,4 @@
-get.allData <- function(formula = as.formula("head ~ elev + MrVBF + MrRTF"), data, grid, grid_buffer=NULL, mrvbf.pslope = 1.0, mrvbf.ppctl = 1.0, smooth.std = 1.0, smoothingKernal = NULL,  smooth.ncells=11, min.sepDist = 5, maxStoredGrids=10,debug.level=0) {
+get.allData <- function(formula = as.formula("head ~ elev + MrVBF + MrRTF"), data, grid, grid_buffer=NULL, mrvbf.pslope = 1.0, mrvbf.ppctl = 1.0, smooth.std = 1.0, smoothingKernal = NULL,  smooth.ncells=11, min.sepDist = 5, maxStoredGrids=5, use.cluster=TRUE, debug.level=0) {
 
 	# Check enviro variables are setup
 	if (!exists('pkg.env') || is.null(pkg.env))
@@ -93,9 +93,9 @@ get.allData <- function(formula = as.formula("head ~ elev + MrVBF + MrRTF"), dat
 	
 	  # Calc. smoothed DEM
 	  if (is.null(data)) {
-	    newdata = get.smoothedDEM(NULL, newdata, grid_buffer, smooth.std = smooth.std, smoothingKernal=smoothingKernal, smooth.ncells=smooth.ncells, maxStoredGrids, debug.level=debug.level)
+	    newdata = get.smoothedDEM(NULL, newdata, grid_buffer, smooth.std = smooth.std, smoothingKernal=smoothingKernal, smooth.ncells=smooth.ncells, maxStoredGrids, use.cluster=use.cluster ,debug.level=debug.level)
 	  } else {
-	    newdata = get.smoothedDEM(newdata, grid, grid_buffer, smooth.std = smooth.std, smoothingKernal=smoothingKernal, smooth.ncells=smooth.ncells, maxStoredGrids, debug.level=debug.level)	  
+	    newdata = get.smoothedDEM(newdata, grid, grid_buffer, smooth.std = smooth.std, smoothingKernal=smoothingKernal, smooth.ncells=smooth.ncells, maxStoredGrids, use.cluster=use.cluster, debug.level=debug.level)	  
 	  }
 	
 	  # Calculate difference between DEM and smoothed DEM.

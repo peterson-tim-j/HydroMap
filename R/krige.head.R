@@ -340,32 +340,40 @@ krige.head <- function(
     if (smooth.ncells<1 || (as.integer(smooth.ncells) - smooth.ncells)>0)
       stop('The input smooth.ncells must be >0 and an integer.')
     
-    x.colbuffer = 0;
-    y.rowbuffer = 0;
-    grid.asRaster = raster::raster(grid);
-    if (any(!is.na(grid.asRaster[,1])) || any(!is.na(grid.asRaster[,ncol(grid.asRaster)]))) {
-      x.colbuffer = smooth.ncells
-    }  
-    if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[nrow(grid.asRaster),]))) {
-      y.rowbuffer = smooth.ncells
-    }     
-    if (x.colbuffer>0 || y.rowbuffer>0) {
-      if (do.grid.est)
-        warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
-      extend.DEM = TRUE
-      DEM.extent.input = raster::extent(grid.asRaster)
-      grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
-
-      # Infill NA DEM values of grid by taking the local average. This was essential to ensure
-      # DEM values at fixed head points beyond the mappng area (eg coastal points
-      # with a fixed head of zero just beyond the DEM extent)
-      dem.asRaster = raster::raster(grid,layer='DEM');
-      for (i in 1:smooth.ncells)
-        grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,smooth.ncells,smooth.ncells), fun=mean, na.rm=TRUE, NAonly=TRUE)
-      
-      grid_buffer= as(grid.asRaster, class(grid))
+    if ('grid.buffer' %in% names(pkg.env) && !is.null(pkg.env$DEM.data)) {
+      grid_buffer = pkg.env$grid.buffer
+    } else {
+      x.colbuffer = 0;
+      y.rowbuffer = 0;
+      grid.asRaster = raster::raster(grid);
+      if (any(!is.na(grid.asRaster[,1])) || any(!is.na(grid.asRaster[,ncol(grid.asRaster)]))) {
+        x.colbuffer = smooth.ncells
+      }  
+      if (any(!is.na(grid.asRaster[1,])) || any(!is.na(grid.asRaster[nrow(grid.asRaster),]))) {
+        y.rowbuffer = smooth.ncells
+      }     
+      # Add buffer to DEM but first check if its already in the package enviro
+      if (x.colbuffer>0 || y.rowbuffer>0) {
+        
+        
+        if (do.grid.est)
+          warning('Buffer added around the input-grid of 1-gridcell. This is required to allow estimation of points at the end of the DEM.',immediate.=T);
+        extend.DEM = TRUE
+        DEM.extent.input = raster::extent(grid.asRaster)
+        grid.asRaster = raster::extend(grid.asRaster, c(y.rowbuffer, x.colbuffer),NA)
+        
+        # Infill NA DEM values of grid by taking the local average. This was essential to ensure
+        # DEM values at fixed head points beyond the mappng area (eg coastal points
+        # with a fixed head of zero just beyond the DEM extent)
+        dem.asRaster = raster::raster(grid,layer='DEM');
+        for (i in 1:smooth.ncells)
+          grid.asRaster = raster::focal(grid.asRaster, w=matrix(1,smooth.ncells,smooth.ncells), fun=mean, na.rm=TRUE, NAonly=TRUE)
+        
+        grid_buffer= as(grid.asRaster, class(grid))
+        pkg.env$grid.buffer = grid_buffer
+      }
+      rm('grid.asRaster')
     }
-    rm('grid.asRaster')
   }
   
   # Find   mid-point of MRVBF & smoothing parameters. This only does anything if
@@ -460,7 +468,8 @@ krige.head <- function(
   # get grid data and remove grid columns not required.
   if (debug.level>0)
     message(' ... Getting grid data');
-  grid = get.allData(formula = formula, NULL, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
+  grid = get.allData(formula = formula, NULL, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, 
+                     smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, use.cluster=use.cluster, debug.level=debug.level)
   grid$smoothDEM = NULL;
 
   # Convert DEM to Raster object
@@ -538,7 +547,8 @@ krige.head <- function(
     } else {
       data.all = rbind(data, newdata, data.fixedHead)
     }
-    data.all = get.allData(formula = formula, data.all, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
+    data.all = get.allData(formula = formula, data.all, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, 
+                           smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, use.cluster=use.cluster, debug.level=debug.level)
 
     # Disaggregate data
     data = data.all[seq(1,nrow(data)),]
@@ -568,7 +578,8 @@ krige.head <- function(
     }else {
       data.all = rbind(data, newdata)
     }
-    data.all = get.allData(formula = formula, data.all, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, debug.level=debug.level)
+    data.all = get.allData(formula = formula, data.all, grid, grid_buffer, mrvbf.pslope = mrvbf.pslope.tmp, mrvbf.ppctl =mrvbf.ppctl.tmp, 
+                           smooth.std = smooth.std.tmp, smooth.ncells=smooth.ncells, use.cluster=use.cluster, debug.level=debug.level)
 
     # Disaggregate data
     if (do.grid.est) {
@@ -987,7 +998,7 @@ krige.head <- function(
       zero.dist = nCells *sqrt(grid.DEM.params$cellsize[1]^2+grid.DEM.params$cellsize[2]^2);
 
       # Find indexes to obs. points near to fixed head points.
-      ind = zerodist2(data, data.fixedHead, zero = zero.dist)
+      ind = sp::zerodist2(data, data.fixedHead, zero = zero.dist)
 
       # Get list of unique obs points
       unique.bores = unique(ind[,1]);
