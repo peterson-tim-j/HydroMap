@@ -612,15 +612,11 @@ krige.head.calib <-
     if (fit.variogram.type == 1) {
       if (all(doIntegerCalib)) {
         useParamTransform = TRUE
-
       } else
         useParamTransform = FALSE
 
-
       doIntegerCalib = FALSE
-
       use.gradient.check = FALSE
-
       if (debug.level>0)
         message('... Assessing variogram parameters to calibrate routine.')
 
@@ -632,48 +628,60 @@ krige.head.calib <-
 
       # Extract the model parameters.
       nModels = dim(model)[1]
-
       variogram.type = as.character(model$model)
-
       variogram.range = model$range
-
       variogram.psill = model$psill
-
       variogram.kappa = model$kappa
-
       variogram.ang1 = model$ang1
-
       variogram.anis1 = model$anis1
 
-
-      #message('DBG: nModels=',nModels)
-
+      # Determine an upper bound for the total sill 
+      do.head.est <- 'head' %in% var.names;
+      do.depth.est <- 'depth' %in% var.names;	   
+      if (do.head.est)
+        data.var = var(data$head)
+      if (do.depth.est)
+        data.var = var(data$depth)
+      total.sill.max = data.var/2
+      
+      # Determine an upper bound for the range
+      obs.range =raster::extent(data)
+      max.range = sqrt((obs.range@ymax - obs.range@ymin)^2 + (obs.range@xmax - obs.range@xmin)^2)/2
+      
       # Add variogram parameters to the list of parameters.
+      message('    The best initial variogram model parameters are:')
+      nParams_start = nParams
       for (i in 1:nModels) {
         if (any(model$model[i] == 'Nug')) {
-          #if (nchar(grid.landtype.colname) == 0) {
           nParams = nParams + 1
-
           param.Names[nParams] = 'nug'
-          param.bounds = rbind(param.bounds,
-                               c(0.1 * variogram.psill[i], 10 * variogram.psill[i]));
-          #}
-        } else {
-          #if (nchar(grid.landtype.colname) == 0) {
-          nParams = nParams + 1
-
-          param.Names[nParams] = paste('psill_model_', i - 1, sep = '')
-
+          
+          if (variogram.psill[i]>0.25*total.sill.max/10.0)
+            variogram.psill[i] = 0.25*total.sill.max/10.0
+          
           param.bounds = rbind(param.bounds,
                                c(0.1 * variogram.psill[i], 10 * variogram.psill[i]))
-          #}
-
+          message(paste('        ',param.Names[nParams],' = ',variogram.psill[i]))
+        } else {
           nParams = nParams + 1
+          param.Names[nParams] = paste('psill_model_', i - 1, sep = '')
 
+          if (variogram.psill[i]>0.5*total.sill.max/10.0)
+            variogram.psill[i] = 0.5*total.sill.max/10.0
+          
+          param.bounds = rbind(param.bounds,
+                               c(0.1 * variogram.psill[i], 10 * variogram.psill[i]))
+          message(paste('        ',param.Names[nParams],' = ',variogram.psill[i]))
+          
+          nParams = nParams + 1
           param.Names[nParams] = paste('range_model_', i - 1, sep = '')
-
+          
+          if (variogram.range[i]>max.range/10)
+            variogram.range[i] = max.range/10
+          
           param.bounds = rbind(param.bounds,
                                c(0.1 * variogram.range[i], 10 * variogram.range[i]))
+          message(paste('        ',param.Names[nParams],' = ',variogram.range[i]))
 
           if (variogram.ang1[i] != 0) {
             nParams = nParams + 1
@@ -698,39 +706,36 @@ krige.head.calib <-
 
             param.bounds = rbind(param.bounds,
                                  c(0.1 * variogram.kappa[i], 10 * variogram.kappa[i]))
+            message(paste('        ',param.Names[nParams],' = ',variogram.kappa[i]))
           }
         }
       }
 
+      # Output variogram parameter range
+      message('    The variogram model parameter calibration bounds are:')
+      for (i in nParams_start:nParams) {
+        message(paste('        ',param.Names[i], param.bounds[i,1],'-',param.bounds[i,2]))
+      }
+      
       # Remove 'nug' from list of model types and add to 'model' variable
       filt = variogram.type != 'Nug'
 
       model = variogram.type[filt]
 
-
     } else {
       # Check that if all parameters have discrete values then all are discrete.
       if (all(doIntegerCalib)) {
         doIntegerCalib = TRUE
-
         useParamTransform = FALSE
-
         use.gradient.check = FALSE
-
       } else if (any(doIntegerCalib)) {
         doIntegerCalib = FALSE
-
         useParamTransform = TRUE
-
         use.gradient.check = FALSE
-
       } else {
         doIntegerCalib = FALSE
-
         useParamTransform = FALSE
-
         use.gradient.check = TRUE
-
       }
     }
 

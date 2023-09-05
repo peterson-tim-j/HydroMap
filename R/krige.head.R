@@ -441,6 +441,8 @@ krige.head <- function(
   if (!is.null(data.fixedHead)) {
     if (!is.character(data.fixedHead)) {
       colnames = names(data.fixedHead);
+      if (!all( c('head','elev') %in% colnames))
+        stop('The input data.fixedHead must contain the column names "head" and "elev".')
       filt = colnames !='head' & colnames!='depth' & colnames!='elev'
       colnames = colnames[filt]
       if (length(colnames)>0)

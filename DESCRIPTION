@@ -1,6 +1,6 @@
 Package: HydroMap
 Title: HydroMap
-Version: 0.2.3.2
+Version: 0.2.3.4
 Authors@R: person("Tim", "Peterson", email = "timjp@unimelb.edu.au", role = c("aut", "cre"))
 Description: Interpolates groundwater level observations giving realistic flow lines.
 Depends: R (>= 3.2.2)

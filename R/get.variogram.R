@@ -1,6 +1,6 @@
 get.variogram <- function(formula, data, cutoff=120000, width=500, model=c('Mat'), 
                           nmin=0, nmax=Inf, maxdist=Inf,  tol.RMSE = 1e-4, max.Its=10, 
-                          fit.variogram.starts = 10, debug.level=0 ) {
+                          fit.variogram.starts = 50, debug.level=0 ) {
 
   if (debug.level>0) 
     message('Building variogram model:')
@@ -37,7 +37,17 @@ get.variogram <- function(formula, data, cutoff=120000, width=500, model=c('Mat'
   resid = residuals(fit);
   data$resid = resid;
   
-
+  # Get variance. This is the upper total sill range
+  if (do.head.est)
+    data.var = var(data$head)
+  if (do.depth.est)
+    data.var = var(data$depth)
+  total.sill.max = data.var/2
+  
+  # Get maximum  spatial extent of data
+  obs.range =raster::extent(data)
+  max.range = sqrt((obs.range@ymax - obs.range@ymin)^2 + (obs.range@xmax - obs.range@xmin)^2)/2
+  
   # Filter out NAs  
   filt_na = is.na(data$resid);
   if (any(filt_na)) {
@@ -53,44 +63,45 @@ get.variogram <- function(formula, data, cutoff=120000, width=500, model=c('Mat'
   if (class(model)[1] =="variogramModel") {
     filt = model$model!='Nug';
     variogram.type = model$model[filt] 
-    variogram.range = model$range[filt] 
-    variogram.psill = model$psill[filt]
-    variogram.nugget = model$psill[!filt]
-    variogram.kappa= model$kappa[filt]
-    variogram.ang1= model$ang1[filt]
-    variogram.anis1= model$anis1[filt]
+    variogram.range.initial = model$range[filt] 
+    variogram.psill.initial = model$psill[filt]
+    variogram.nugget.initial = model$psill[!filt]
+    variogram.kappa.initial= model$kappa[filt]
+    variogram.ang1.initial = model$ang1[filt]
+    variogram.anis1.initial = model$anis1[filt]
   } else {
     if (is.character(model)) {
       variogram.type = model;
     } else
       variogram.type ='Mat';
     
-    variogram.range = 25000;
-    variogram.psill = 20;
-    variogram.nugget = 1;
-    variogram.kappa= 0.5;
+    variogram.range.initial = max.range/4
+    variogram.psill.initial = 0.9*total.sill.max/4
+    variogram.nugget.initial = 0.1*total.sill.max/4
+    variogram.kappa.initial= 0.5;
   }
   
   # Fit variogam to initial residuals
   if (debug.level>0) 
     message('... Building initial variogram.');
-  variogram_exp = variogram(resid ~ 1, dataFilt, cressie=FALSE, cutoff=cutoff, width=width);
-  model = gstat::vgm(nugget=variogram.nugget,psill=variogram.psill, model=variogram.type, range=variogram.range, kappa=variogram.kappa);
+  variogram_exp = gstat::variogram(resid ~ 1, dataFilt, cressie=FALSE, cutoff=cutoff, width=width);
+  model = gstat::vgm(nugget=variogram.nugget.initial, psill=variogram.psill.initial, model=variogram.type, range=variogram.range.initial, 
+                     kappa=variogram.kappa.initial);
   fit.kappa=F
   if (variogram.type=='Mat')
 	  fit.kappa=T	
   if (debug.level>0) 
     message('... Fitting initial variogram.');
-  model  = fit.variogram(variogram_exp, fit.sills=TRUE,  fit.ranges=TRUE, fit.kappa = fit.kappa, model = model);       
+  model  = gstat::fit.variogram(variogram_exp, fit.sills=TRUE,  fit.ranges=TRUE, fit.kappa = fit.kappa, model = model);       
 
   # Update initial variogram
   if (debug.level>0) 
     message('... Extracting fitted initial variogram values.');
   variogram.type = model$model[2] 
-  variogram.nugget = if(is.finite(model$psill[1])){model$psill[1]}else{1}
-  variogram.range = if(is.finite(model$range[2])){model$range[2]}else{25000}
-  variogram.psill = if(is.finite(model$psill[2])){model$psill[2]}else{20}
-  variogram.kappa= if(is.finite(model$kappa[2])){model$kappa[2]}else{0.5}
+  variogram.nugget = if(is.finite(model$psill[1])){model$psill[1]}else{variogram.nugget.initial}
+  variogram.range = if(is.finite(model$range[2])){model$range[2]}else{variogram.range.initial}
+  variogram.psill = if(is.finite(model$psill[2])){model$psill[2]}else{variogram.psill.initial}
+  variogram.kappa= if(is.finite(model$kappa[2])){model$kappa[2]}else{variogram.kappa.initial}
   variogram.ang1= model$ang1[2]
   variogram.anis1= model$anis1[2]
   if (debug.level>0){
@@ -133,13 +144,18 @@ get.variogram <- function(formula, data, cutoff=120000, width=500, model=c('Mat'
     	if (fit.kappa)
     	   kappa = 0.1*variogram.kappa + (10.0*variogram.kappa - 0.1*variogram.kappa) * runif(1);
     
+    	# Constrain initial guess my plausible bounds
+    	sill = min(sill, total.sill.max)
+    	nug = min(nug, total.sill.max-sill)
+    	range = min(range, max.range)
+    	
     	# Build experimental and fit model variogram;	
     	if (fit.kappa) {
      	   model_sample = gstat::vgm(nugget=nug,psill=sill, model=variogram.type, range=range, kappa=kappa);
     	} else {
      	   model_sample = gstat::vgm(nugget=nug,psill=sill, model=variogram.type, range=range);
     	}
-    	model_sample  = fit.variogram(variogram_exp, fit.sills=TRUE,  fit.ranges=TRUE, fit.kappa = fit.kappa, model = model_sample,  warn.if.neg = FALSE, debug.level=0);           
+    	model_sample  = gstat::fit.variogram(variogram_exp, fit.sills=TRUE,  fit.ranges=TRUE, fit.kappa = fit.kappa, model = model_sample,  warn.if.neg = FALSE, debug.level=0);           
     
     	# Get the weighted sum of squares error and report to the user.
     	SSEerr = attr(model_sample, 'SSErr')
