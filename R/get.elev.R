@@ -53,6 +53,9 @@ get.elev <- function(data, grid, debug.level=0) {
     
     tmp = raster::extract(dem.asRaster, data, method='bilinear');    
 
+    if (any(is.na(tmp))) {
+      stop(paste('\nThe following point is outside the input DEM grid:',data$bore_id[which(is.na(tmp))],'\nEither remove the point or expand the extend of the DEM.' ))
+    }
     data$tmpName =  tmp;
     ncols = length(names(data))
     names(data)[ncols] = 'DEM'    
